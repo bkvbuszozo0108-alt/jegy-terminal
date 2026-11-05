@@ -112,8 +112,11 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 .sysrow{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-top:1px solid var(--line)}
 .sysrow span:first-child{color:var(--muted)} .sysrow span:last-child{font-weight:500;text-align:right;font-variant-numeric:tabular-nums}
 .dlhint{font-size:.78rem;color:var(--muted);line-height:1.45}
-.colrow{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:6px 8px}
-.colrow input{width:38px;height:30px;border:0;padding:0;background:none;flex:0 0 auto}
+.colrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;font-size:.78rem;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:6px 8px}
+.colrow input[type=color]{width:38px;height:30px;border:0;padding:0;background:none;flex:0 0 auto}
+.colrow input.hex{width:9.5ch;font-family:ui-monospace,monospace;font-size:.8rem;padding:4px 6px;border:1px solid var(--line);border-radius:4px;flex:0 0 auto;text-transform:lowercase}
+.colrow .lbl{flex:1 1 100%;line-height:1.2}
+.colrow button{font:inherit;font-size:.72rem;border:1px solid var(--line);background:#fff;border-radius:4px;padding:4px 6px;cursor:pointer;color:var(--fg)}
 .scrim{position:absolute;inset:0;z-index:7;background:rgba(0,0,0,.3)}
 
 /* splash */
@@ -234,8 +237,10 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <div class="dlhint">Üresen hagyott mező = alapértelmezett szöveg. A módosítások mentés után azonnal érvényesek.</div>
     <div id="bossFields" style="display:flex;flex-direction:column;gap:8px"></div>
     <div class="syshd" style="margin-top:6px">Színek</div>
+    <div class="dlhint">Minden színnél a kód (#rrggbb) beírható és kimásolható. Az egész színcsomag egyben is másolható / beilleszthető.</div>
     <div id="bossColors" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
-    <div class="btns"><button type="button" id="colorReset">Alapszínek</button></div>
+    <label>Színcsomag kódja (másold ki, vagy illeszd be és nyomd meg a Betöltés gombot)<textarea id="palText" rows="3" spellcheck="false"></textarea></label>
+    <div class="btns"><button type="button" id="palCopy">Színcsomag másolása</button><button type="button" id="palLoad">Betöltés a kódból</button><button type="button" id="colorReset">Alapszínek</button></div>
     <label>Új PIN-kód (üres = marad)<input id="newPin" inputmode="numeric" maxlength="8"></label>
     <div class="btns"><button type="button" data-close>Mégse</button><button type="button" id="bossReset">Alapértelmezett szövegek</button><button type="button" class="primary" id="bossSave">Mentés</button></div>
   </div>
@@ -290,7 +295,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   const COL={status:['Állapotsor / indítóképernyő','#1f2a33'],bar:['Felső sáv','#37474f'],btn:['Felső sáv gombjai','#546e7a'],trip:['Információs sáv','#1e88e5'],nav:['Alsó menüsáv','#263238'],'nav-active':['Aktív menügomb','#1e88e5'],page:['Háttér (készenlét)','#e4e7ea'],card:['Panelek','#ffffff'],'ok-chip':['Utolsó: érvényes szín','#2e7d32'],ok:['ÉRVÉNYES háttér','#4caf50'],'ok-dark':['ÉRVÉNYES sötét','#1b5e20'],bad:['ÉRVÉNYTELEN háttér','#e53935'],'bad-dark':['ÉRVÉNYTELEN gomb szöveg','#b71c1c'],frame:['Szkenner jelző / keret','#69f0ae'],laser:['Lézervonal','#ff3b30']};
   function applyColors(){ const r=document.documentElement.style; for(const k in COL){ const v=cfg.colors&&cfg.colors[k]; if(v) r.setProperty('--'+k,v); else r.removeProperty('--'+k); } const th=document.querySelector('meta[name=theme-color]'); if(th) th.content=(cfg.colors&&cfg.colors.status)||COL.status[1]; }
   function applyTexts(){ document.querySelectorAll('[data-t]').forEach(el=>{ el.textContent=tx(el.getAttribute('data-t')); }); $('codeInput').placeholder=tx('codePh'); }
-  const cfg=Object.assign({title:'Jegyellenőrzés',sub:'Beléptetési pont · Főbejárat',welcome:'Belépés engedélyezve. Jó szórakozást!',deny:'Belépés megtagadva',id:'E-0001',logo:'',cap:'Olvassa be a belépőjegy kódját',term:'T-0412',icon:'',pin:'0000',tx:{},colors:{},spTitle:'',spSub:'',spSec:2,preview:false},window.__PRESET||{},store.get('cfg',{}));
+  const cfg=Object.assign({title:'Jegyellenőrzés',sub:'Beléptetési pont · Főbejárat',welcome:'Belépés engedélyezve. Jó szórakozást!',deny:'Belépés megtagadva',id:'E-0001',logo:'',cap:'Olvassa be a belépőjegy kódját',term:'T-0412',icon:'',pin:'0000',tx:{},colors:{},spTitle:'',spSub:'',spSec:2,preview:true},window.__PRESET||{},store.get('cfg',{}));
 
   function drawHeader(){
     $('rName').textContent=cfg.title||'Jegyellenőrzés';
@@ -534,9 +539,26 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     const F=$('bossFields'); F.innerHTML='';
     for(const k in TX){ const l=document.createElement('label'); l.textContent=TX[k][0]; const i=document.createElement('input'); i.id='tx_'+k; i.placeholder=TX[k][1]; i.value=(cfg.tx&&cfg.tx[k])||''; l.appendChild(i); F.appendChild(l); }
     const C=$('bossColors'); C.innerHTML='';
-    for(const k in COL){ const d=document.createElement('div'); d.className='colrow'; const i=document.createElement('input'); i.type='color'; i.id='col_'+k; i.value=(cfg.colors&&cfg.colors[k])||COL[k][1]; d.append(i,document.createTextNode(COL[k][0])); C.appendChild(d); }
+    for(const k in COL){ const d=document.createElement('div'); d.className='colrow'; const l=document.createElement('span'); l.className='lbl'; l.textContent=COL[k][0];
+      const i=document.createElement('input'); i.type='color'; i.id='col_'+k; i.value=(cfg.colors&&cfg.colors[k])||COL[k][1];
+      const h=document.createElement('input'); h.className='hex'; h.id='hex_'+k; h.maxLength=7; h.value=i.value; h.spellcheck=false;
+      const cp=document.createElement('button'); cp.type='button'; cp.textContent='Másol';
+      i.addEventListener('input',()=>{ h.value=i.value; palSync(); }); h.addEventListener('input',()=>{ const v=normHex(h.value); if(v){ i.value=v; palSync(); } });
+      cp.addEventListener('click',()=>{ copyText(i.value,cp); });
+      d.append(l,i,h,cp); C.appendChild(d); }
+    palSync();
     $('newPin').value=''; openSheet('bossBox'); });
-  $('colorReset').addEventListener('click',()=>{ for(const k in COL) $('col_'+k).value=COL[k][1]; });
+  function normHex(v){ v=String(v||'').trim().replace(/^#?/,'#'); if(/^#[0-9a-f]{3}$/i.test(v)) v='#'+v[1]+v[1]+v[2]+v[2]+v[3]+v[3]; return /^#[0-9a-f]{6}$/i.test(v)?v.toLowerCase():null; }
+  function copyText(t,btn){ const done=()=>{ if(btn){ const o=btn.textContent; btn.textContent='✓'; setTimeout(()=>btn.textContent=o,1200); } };
+    try{ navigator.clipboard.writeText(t).then(done).catch(()=>{ const ta=$('palText'); ta.focus(); ta.select(); done(); }); }catch(e){} }
+  function palSync(){ $('palText').value=Object.keys(COL).map(k=>k+'='+$('col_'+k).value).join(';'); }
+  function setAll(fn){ for(const k in COL){ const v=fn(k); if(v){ $('col_'+k).value=v; $('hex_'+k).value=v; } } palSync(); }
+  $('colorReset').addEventListener('click',()=>{ setAll(k=>COL[k][1]); });
+  $('palCopy').addEventListener('click',()=>{ palSync(); copyText($('palText').value,$('palCopy')); });
+  $('palLoad').addEventListener('click',()=>{ const m={}; let json=null; try{ json=JSON.parse($('palText').value); }catch(e){}
+    if(json&&typeof json==='object'){ for(const k in json) m[k]=normHex(json[k]); }
+    else $('palText').value.split(/[;,\n]/).forEach(p=>{ const i=p.indexOf('='); if(i>0) m[p.slice(0,i).trim()]=normHex(p.slice(i+1)); });
+    let n=0; setAll(k=>{ if(m[k]){ n++; return m[k]; } return null; }); $('palLoad').textContent=n?'Betöltve ('+n+')':'Nincs érvényes kód'; setTimeout(()=>$('palLoad').textContent='Betöltés a kódból',1500); });
   $('bossSave').addEventListener('click',()=>{ const o={}; for(const k in TX){ const v=$('tx_'+k).value.trim(); if(v) o[k]=v; } cfg.tx=o; const c={}; for(const k in COL){ const v=$('col_'+k).value; if(v&&v.toLowerCase()!==COL[k][1]) c[k]=v; } cfg.colors=c; const np=$('newPin').value.trim(); if(np) cfg.pin=np; store.set('cfg',cfg); drawHeader(); applyColors(); renderRows(); closeSheets(); });
   $('bossReset').addEventListener('click',()=>{ for(const k in TX) $('tx_'+k).value=''; });
   sheets.push('bossBox');
