@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0f2a1c"><title>Jegyellenőr terminál – Telepítés</title>
+<link rel="manifest" href="manifest.json"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% 0,#1b4332 0,#0f2a1c 60%);color:#e8f1ea;font:15px/1.5 Roboto,"Segoe UI",system-ui,sans-serif;display:grid;place-items:center;padding:24px}
+.c{width:min(420px,100%);text-align:center}.c img.l{width:90px;border-radius:20px}
+h1{margin:10px 0 2px;font-size:20px;letter-spacing:.2em;font-weight:700;text-transform:uppercase}.s{color:#9ccaa9;font-size:11px;letter-spacing:.22em;text-transform:uppercase;margin-bottom:22px}
+.qr{background:#fff;padding:12px;display:inline-block;min-width:244px;min-height:244px;border-radius:6px}.qr img,.qr canvas{display:block}
+.u{font:11px ui-monospace,Consolas,monospace;color:#9ccaa9;margin:10px 0 18px;word-break:break-all}
+.b{display:block;width:100%;padding:13px;margin-bottom:10px;border-radius:8px;border:1px solid #3ddc84;background:#3ddc84;color:#0f2a1c;font:inherit;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;text-decoration:none;font-size:13px}
+.b.g{background:#163a25;border-color:#2f6a44;color:#e8f1ea}.b:hover{filter:brightness(1.1)}
+.st{text-align:left;border:1px solid #2f6a44;background:#122e1e;padding:12px 14px;font-size:13px;line-height:1.8;margin-top:16px;border-radius:8px}
+</style></head><body><div class="c">
+<img class="l" src="icon-192.png" alt=""><h1>Jegyellenőr</h1><div class="s">Beléptető terminál · Telepítés</div>
+<div class="qr" id="qr"></div><div class="u" id="u"></div>
+<button class="b" id="ins" hidden>Telepítés ezen az eszközön</button>
+<a class="b g" href="./">Megnyitás böngészőben</a>
+<div class="st"><b>Másik telefon:</b> olvasd be a QR-kódot a kamerával, nyisd meg a linket.<br>
+<b>Android (Chrome):</b> Telepítés gomb, vagy ⋮ menü → „Alkalmazás telepítése” / „Hozzáadás a kezdőképernyőhöz”.<br>
+<b>iPhone (Safari):</b> Megosztás → „Főképernyőhöz adás”.<br>
+<b>Számítógép (Chrome/Edge):</b> a címsor telepítés ikonja vagy a fenti gomb.<br>
+<b>Kamera:</b> az első indításkor engedélyezd a Chrome kérdésére.</div>
+</div>
+<script>
+var u=location.href.split(/[?#]/)[0].replace(/[^\/]*$/,"");document.getElementById("u").textContent=u;
+(function(){var box=document.getElementById("qr"),size=220;
+ function fb(){box.innerHTML="";var i=new Image();i.width=size;i.height=size;i.alt="QR kód";i.src="https://api.qrserver.com/v1/create-qr-code/?size="+size+"x"+size+"&margin=0&data="+encodeURIComponent(u);box.appendChild(i);}
+ function mk(){try{new QRCode(box,{text:u,width:size,height:size,colorDark:"#000000",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.M});}catch(e){fb();}}
+ var s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";s.onload=mk;s.onerror=fb;document.head.appendChild(s);})();
+var dp=null,ib=document.getElementById("ins");
+window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();dp=e;ib.hidden=false;});
+ib.onclick=function(){if(dp){dp.prompt();dp.userChoice.then(function(){ib.hidden=true});}};
+if(matchMedia("(display-mode: standalone)").matches){ib.hidden=true;}
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(function(){});
+</script></body></html>

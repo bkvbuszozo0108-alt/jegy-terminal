@@ -1,6 +1,6 @@
 {
- "name": "Belépőjegy terminál",
- "short_name": "Belépőjegy",
+ "name": "Jegyellenőr terminál",
+ "short_name": "Jegyellenőr",
  "start_url": "./",
  "scope": "./",
  "display": "standalone",
@@ -27,5 +27,6 @@
    "type": "image/png",
    "purpose": "maskable"
   }
- ]
+ ],
+ "id": "./"
 }
