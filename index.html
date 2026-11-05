@@ -213,7 +213,8 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <label>Kiírás a fejléc alatt<input id="sSub" placeholder="Főbejárat · Beléptetés 20:00-tól"></label>
     <div class="logoprev"><img id="sLogoPrev" alt="" hidden><label class="fb" style="flex:1"><span style="font-weight:700;color:var(--fg)">Logó feltöltése</span><input type="file" id="sLogo" accept="image/*" style="position:static;width:auto;height:auto;opacity:1;margin-top:6px"></label><button type="button" id="sLogoDel" style="font:inherit;border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px;cursor:pointer">Törlés</button></div>
     <div class="logoprev"><img id="sIconPrev" alt="" hidden style="height:56px;width:56px;border-radius:12px"><label class="fb" style="flex:1"><span style="font-weight:700;color:var(--fg)">Alkalmazás ikon (kezdőképernyő)</span><input type="file" id="sIcon" accept="image/*" style="position:static;width:auto;height:auto;opacity:1;margin-top:6px;pointer-events:auto"></label><button type="button" id="sIconDel" style="font:inherit;border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px;cursor:pointer">Alap</button></div>
-    <div class="dlhint">Az ikon a kezdőképernyőre tett alkalmazásnál jelenik meg. Beállítás után töltsd le újra az appot a ☰ menüből, és úgy add hozzá a kezdőképernyőhöz.</div>
+    <label>Alkalmazás neve a kezdőképernyőn (ikon alatt)<input id="sAppName" placeholder="pl. Jegyellenőr"></label>
+    <div class="dlhint"><b>Fontos:</b> a kezdőképernyőn lévő ikon és név a hozzáadás pillanatában rögzül. Módosítás után: a régi ikont töröld a kezdőképernyőről, majd Chrome ⋮ menü → <b>„Hozzáadás a kezdőképernyőhöz”</b> (ne a „Telepítés”-t válaszd) – ott a név is átírható, és az itt beállított ikon kerül ki.</div>
     <label>Üdvözlő felirat (érvényes jegynél)<input id="sWelcome" placeholder="Jó szórakozást!"></label>
     <label>Elutasító felirat (érvénytelen jegynél)<input id="sDeny" placeholder="Belépés nem engedélyezett"></label>
     <label>Felirat a szkenner alatt<input id="sCap" placeholder="Olvassa be a belépőjegy kódját"></label>
@@ -268,10 +269,13 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   const store={get(k,f){try{const v=localStorage.getItem(k);return v==null?f:JSON.parse(v)}catch(e){return f}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
   const DEFAULT_ICON=$('icoLink').getAttribute('href');
   const b64u=str=>btoa(unescape(encodeURIComponent(str)));
+  const DEFAULT_MANIFEST=$('mfLink').getAttribute('href');
   function applyIcon(){
-    const ico=cfg.icon||DEFAULT_ICON, png=!!cfg.icon;
-    $('icoLink').href=ico; $('atLink').href=ico;
-    const man={name:cfg.title||'Belépőjegy terminál',short_name:(cfg.title||'Belépőjegy').slice(0,12),start_url:'.',display:'standalone',orientation:'portrait',background_color:'#0f2a1c',theme_color:'#0f2a1c',lang:'hu',
+    const ico=cfg.icon||DEFAULT_ICON, png=!!cfg.icon, custom=!!cfg.icon||!!(cfg.appName&&cfg.appName.trim());
+    const nm=(cfg.appName&&cfg.appName.trim())||cfg.title||'Jegyellenőr';
+    document.title=nm; $('icoLink').href=ico; $('atLink').href=ico;
+    if(!custom){ $('mfLink').href=DEFAULT_MANIFEST; return; }
+    const man={name:nm,short_name:nm.slice(0,12),start_url:location.pathname.replace(/[^\/]*$/,''),scope:location.pathname.replace(/[^\/]*$/,''),display:'standalone',orientation:'portrait',background_color:'#1f2a33',theme_color:'#1f2a33',lang:'hu',
       icons:[{src:ico,sizes:png?'192x192':'192x192 512x512',type:png?'image/png':'image/svg+xml',purpose:'any'}]};
     try{ if(applyIcon.url) URL.revokeObjectURL(applyIcon.url); applyIcon.url=URL.createObjectURL(new Blob([JSON.stringify(man)],{type:'application/manifest+json'})); $('mfLink').href=applyIcon.url; }
     catch(e){ $('mfLink').href='data:application/manifest+json;base64,'+b64u(JSON.stringify(man)); }
@@ -295,7 +299,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   const COL={status:['Állapotsor / indítóképernyő','#1f2a33'],bar:['Felső sáv','#37474f'],btn:['Felső sáv gombjai','#546e7a'],trip:['Információs sáv','#1e88e5'],nav:['Alsó menüsáv','#263238'],'nav-active':['Aktív menügomb','#1e88e5'],page:['Háttér (készenlét)','#e4e7ea'],card:['Panelek','#ffffff'],'ok-chip':['Utolsó: érvényes szín','#2e7d32'],ok:['ÉRVÉNYES háttér','#4caf50'],'ok-dark':['ÉRVÉNYES sötét','#1b5e20'],bad:['ÉRVÉNYTELEN háttér','#e53935'],'bad-dark':['ÉRVÉNYTELEN gomb szöveg','#b71c1c'],frame:['Szkenner jelző / keret','#69f0ae'],laser:['Lézervonal','#ff3b30']};
   function applyColors(){ const r=document.documentElement.style; for(const k in COL){ const v=cfg.colors&&cfg.colors[k]; if(v) r.setProperty('--'+k,v); else r.removeProperty('--'+k); } const th=document.querySelector('meta[name=theme-color]'); if(th) th.content=(cfg.colors&&cfg.colors.status)||COL.status[1]; }
   function applyTexts(){ document.querySelectorAll('[data-t]').forEach(el=>{ el.textContent=tx(el.getAttribute('data-t')); }); $('codeInput').placeholder=tx('codePh'); }
-  const cfg=Object.assign({title:'Jegyellenőrzés',sub:'Beléptetési pont · Főbejárat',welcome:'Belépés engedélyezve. Jó szórakozást!',deny:'Belépés megtagadva',id:'E-0001',logo:'',cap:'Olvassa be a belépőjegy kódját',term:'T-0412',icon:'',pin:'0000',tx:{},colors:{},spTitle:'',spSub:'',spSec:2,preview:true},window.__PRESET||{},store.get('cfg',{}));
+  const cfg=Object.assign({title:'Jegyellenőrzés',sub:'Beléptetési pont · Főbejárat',welcome:'Belépés engedélyezve. Jó szórakozást!',deny:'Belépés megtagadva',id:'E-0001',logo:'',cap:'Olvassa be a belépőjegy kódját',term:'T-0412',icon:'',pin:'0000',tx:{},colors:{},spTitle:'',spSub:'',spSec:2,preview:true,appName:''},window.__PRESET||{},store.get('cfg',{}));
 
   function drawHeader(){
     $('rName').textContent=cfg.title||'Jegyellenőrzés';
@@ -513,7 +517,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 
   /* settings incl. logo upload (stored as a small data URL) */
   let pendingLogo=null;
-  $('navSet').addEventListener('click',()=>{ $('sTitle').value=cfg.title; $('sSub').value=cfg.sub; $('sWelcome').value=cfg.welcome; $('sDeny').value=cfg.deny; $('sId').value=cfg.id; $('sCap').value=cfg.cap; $('sTerm').value=cfg.term; $('sPreview').checked=!!cfg.preview; $('sSpTitle').value=cfg.spTitle||''; $('sSpSub').value=cfg.spSub||''; $('sSpSec').value=cfg.spSec;
+  $('navSet').addEventListener('click',()=>{ $('sTitle').value=cfg.title; $('sSub').value=cfg.sub; $('sWelcome').value=cfg.welcome; $('sDeny').value=cfg.deny; $('sId').value=cfg.id; $('sCap').value=cfg.cap; $('sTerm').value=cfg.term; $('sAppName').value=cfg.appName||''; $('sPreview').checked=!!cfg.preview; $('sSpTitle').value=cfg.spTitle||''; $('sSpSub').value=cfg.spSub||''; $('sSpSec').value=cfg.spSec;
     pendingLogo=cfg.logo||null; $('sLogoPrev').hidden=!pendingLogo; if(pendingLogo) $('sLogoPrev').src=pendingLogo;
     pendingIcon=cfg.icon||null; $('sIconPrev').hidden=false; $('sIconPrev').src=pendingIcon||DEFAULT_ICON; openSheet('setBox'); });
   let pendingIcon=null;
@@ -527,7 +531,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       c.getContext('2d').drawImage(img,0,0,c.width,c.height); pendingLogo=c.toDataURL('image/png'); $('sLogoPrev').src=pendingLogo; $('sLogoPrev').hidden=false; URL.revokeObjectURL(url); $('sLogo').value=''; };
     img.src=url; });
   $('sLogoDel').addEventListener('click',()=>{ pendingLogo=null; $('sLogoPrev').hidden=true; });
-  $('setSave').addEventListener('click',()=>{ cfg.title=$('sTitle').value.trim()||'Jegyellenőrzés'; cfg.sub=$('sSub').value.trim(); cfg.welcome=$('sWelcome').value.trim(); cfg.deny=$('sDeny').value.trim(); cfg.id=$('sId').value.trim()||'#0001'; cfg.cap=$('sCap').value.trim()||'Olvassa be a belépőjegy kódját'; cfg.term=$('sTerm').value.trim()||'T-0412'; cfg.preview=$('sPreview').checked; applyPreview(); cfg.spTitle=$('sSpTitle').value.trim(); cfg.spSub=$('sSpSub').value.trim(); cfg.spSec=parseFloat(String($('sSpSec').value).replace(',','.')); if(isNaN(cfg.spSec)) cfg.spSec=2; cfg.logo=pendingLogo||''; cfg.icon=pendingIcon||'';
+  $('setSave').addEventListener('click',()=>{ cfg.title=$('sTitle').value.trim()||'Jegyellenőrzés'; cfg.sub=$('sSub').value.trim(); cfg.welcome=$('sWelcome').value.trim(); cfg.deny=$('sDeny').value.trim(); cfg.id=$('sId').value.trim()||'#0001'; cfg.cap=$('sCap').value.trim()||'Olvassa be a belépőjegy kódját'; cfg.term=$('sTerm').value.trim()||'T-0412'; cfg.appName=$('sAppName').value.trim(); cfg.preview=$('sPreview').checked; applyPreview(); cfg.spTitle=$('sSpTitle').value.trim(); cfg.spSub=$('sSpSub').value.trim(); cfg.spSec=parseFloat(String($('sSpSec').value).replace(',','.')); if(isNaN(cfg.spSec)) cfg.spSec=2; cfg.logo=pendingLogo||''; cfg.icon=pendingIcon||'';
     store.set('cfg',cfg); drawHeader(); applyIcon(); closeSheets(); });
 
   /* test scans */
