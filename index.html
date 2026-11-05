@@ -18,9 +18,9 @@
 /* Layout: handheld entry-control terminal. Dark status bar, green app bar with the event's own logo + name, green event bar,
    black camera box with green frame and red scan line, list of recent checks. Result = whole screen green or red with a white detail card. */
 :root{
-  --status:#0f2a1c; --bar:#2e7d4f; --trip:#3cb371; --nav:#1b4332; --nav-active:#3cb371;
-  --page:#edf5ee; --card:#ffffff; --fg:#111; --muted:#5a6b60; --line:#dfe9e2; --ok-chip:#2e7d4f;
-  --ok:#3ddc84; --ok-dark:#0f2a1c; --bad:#e5383b; --bad-dark:#b11e22; --frame:#3ddc84; --laser:#ff3b30;
+  --status:#1f2a33; --bar:#37474f; --btn:#546e7a; --trip:#1e88e5; --nav:#263238; --nav-active:#1e88e5;
+  --page:#e4e7ea; --card:#ffffff; --fg:#111; --muted:#5b6670; --line:#cfd5da; --ok-chip:#2e7d32;
+  --ok:#4caf50; --ok-dark:#1b5e20; --bad:#e53935; --bad-dark:#b71c1c; --frame:#69f0ae; --laser:#ff3b30;
   --font:"Roboto",system-ui,-apple-system,"Segoe UI",sans-serif;
   color-scheme:light;
 }
@@ -38,121 +38,108 @@ body{margin:0;background:var(--status);color:var(--fg);font-family:var(--font);o
 .statusbar .batt i{display:inline-block;width:10px;height:6px;border:1.5px solid #fff;border-radius:1px;position:relative;padding:1px}
 .statusbar .batt i b{display:block;height:100%;background:#fff}
 
-.appbar{background:var(--bar);color:#fff;display:flex;align-items:center;gap:12px;padding-block:10px;min-height:60px}
-.appbar .ic{width:36px;height:36px;border-radius:4px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:1.1rem;border:0;color:#fff;cursor:pointer;flex:0 0 auto}
-.appbar .logo{height:40px;max-width:120px;object-fit:contain;border-radius:6px;background:#fff;padding:3px;flex:0 0 auto}
-.appbar h1{margin:0;font-size:1.25rem;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
-.tripbar{background:var(--trip);color:#fff;padding-block:9px;font-size:.9rem;line-height:1.4}
-.tripbar b{font-weight:700}
 
-.main{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:12px;padding-block:12px}
-.cam{position:relative;width:100%;max-width:100%;aspect-ratio:5/3;background:#111;border-radius:6px;overflow:hidden;flex:0 0 auto}
+.topbar{background:var(--bar);display:flex;gap:6px;align-items:stretch;padding-block:8px}
+.topbar input{flex:1;min-width:0;font:inherit;font-size:1.05rem;padding:9px 10px;border:1px solid rgba(0,0,0,.25);border-radius:3px;background:#fff;color:#111}
+.topbar .tb{font:inherit;font-weight:500;font-size:.95rem;border:1px solid rgba(0,0,0,.25);border-radius:3px;background:var(--btn);color:#fff;padding:0 14px;cursor:pointer;flex:0 0 auto}
+.topbar .tb.ico{font-size:1.2rem;padding:0 12px}
+.topbar .tb.on{background:var(--frame);color:#06200f}
+.infobar{background:var(--trip);color:#fff;padding-block:7px;font-size:.9rem;line-height:1.35;text-align:center}
+.main{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;background:var(--page)}
+.camhold{position:absolute;width:1px;height:1px;overflow:hidden;opacity:.01;pointer-events:none;left:0;top:0}
+.camhold video{width:2px;height:2px}
+.cam{position:relative;width:100%;max-width:100%;aspect-ratio:5/3;background:#111;flex:0 0 auto}
 .cam video,.cam img{width:100%;height:100%;object-fit:cover;display:block}
 .cam .msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px 20px 40px;color:#cfd8d2;font-size:.9rem;background:#111}
-.cam .frame{position:absolute;left:50%;top:44%;width:58%;max-width:100%;aspect-ratio:2/1;transform:translate(-50%,-50%);border:2px solid var(--frame);border-radius:12px;pointer-events:none}
+.cam .frame{position:absolute;left:50%;top:44%;width:58%;max-width:100%;aspect-ratio:2/1;transform:translate(-50%,-50%);border:2px solid var(--frame);border-radius:6px;pointer-events:none}
 .cam .laser{position:absolute;left:-4%;right:-4%;top:50%;height:2px;background:var(--laser);box-shadow:0 0 8px var(--laser);animation:laser 1.8s ease-in-out infinite}
 @keyframes laser{0%,100%{top:15%}50%{top:85%}}
 @media (prefers-reduced-motion:reduce){.cam .laser{animation:none;top:50%}}
 .cam .cap{position:absolute;left:0;right:0;bottom:10px;text-align:center;color:#e6efe9;font-size:.9rem}
+.panel{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding-block:18px;color:var(--fg)}
+.panel.ok{background:var(--ok);color:#0b2a12}
+.panel.bad{background:var(--bad);color:#fff}
+.rlogo{height:64px;max-width:200px;object-fit:contain;background:#fff;border-radius:6px;padding:4px}
+.rname{font-weight:700;font-size:1.3rem;letter-spacing:.02em;text-wrap:balance}
+.scanstate{display:flex;align-items:center;justify-content:center;gap:10px;font-weight:700;letter-spacing:.14em;font-size:.85rem;margin-top:10px;color:var(--bar)}
+.scanstate .dot{width:11px;height:11px;border-radius:50%;background:var(--frame);animation:ping 1.6s infinite}
+.scanstate.off .dot{background:#b91c1c;animation:none}.scanstate.off{color:#b91c1c}
+.panel.ok .scanstate,.panel.bad .scanstate{color:inherit;opacity:.85}
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(61,220,132,.6)}70%{box-shadow:0 0 0 10px rgba(61,220,132,0)}100%{box-shadow:0 0 0 0 rgba(61,220,132,0)}}
+@media (prefers-reduced-motion:reduce){.scanstate .dot{animation:none}}
+.scanhint{color:var(--muted);font-size:.9rem}.panel.ok .scanhint,.panel.bad .scanhint{color:inherit;opacity:.8}
+.scanerr{font-size:.85rem;color:#b91c1c;line-height:1.4;max-width:34ch}
+.panel.ok .scanhint,.panel.bad .scanhint,.panel.ok .scanerr,.panel.bad .scanerr{display:none}
+.vwrap{width:100%;display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:8px}
+.lab{font-size:1.05rem;align-self:flex-start;padding-left:4px}
+.verdict{font-size:clamp(2rem,10vw,2.8rem);font-weight:700;letter-spacing:.03em;line-height:1.05;text-wrap:balance}
+.why{font-size:1rem;font-weight:500;text-wrap:balance;max-width:36ch}
+.details{width:100%;max-width:420px;background:rgba(255,255,255,.75);color:#111;border-radius:4px;padding:2px 12px;text-align:left;margin-top:8px}
+.details div{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid rgba(0,0,0,.08);font-size:.92rem}
+.details div:last-child{border-bottom:0}
+.details span:first-child{color:#444;white-space:nowrap}
+.details span:last-child{font-weight:700;text-align:right;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.txn{font-size:.7rem;letter-spacing:.04em;opacity:.8;font-variant-numeric:tabular-nums}
+.act{width:100%;max-width:420px;display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.act button{width:100%;font:inherit;font-weight:700;font-size:1rem;border:0;border-radius:4px;padding:14px;cursor:pointer;background:#fff;color:var(--bad-dark)}
+.act button.sec{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.75)}
+.lastbody{margin-top:auto;padding-top:12px;font-family:ui-monospace,"Roboto Mono",Consolas,monospace;font-size:.8rem;line-height:1.6;font-variant-numeric:tabular-nums;color:var(--muted);text-align:left;align-self:stretch}
+.panel.ok .lastbody,.panel.bad .lastbody{display:none}
+.lastbody .k{display:inline-block;min-width:9ch}.lastbody .res{font-weight:700}.lastbody .res.ok{color:var(--ok-chip)}.lastbody .res.bad{color:var(--bad)}.lastbody .none{color:var(--muted)}
+.foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;font-size:.68rem;color:var(--muted);letter-spacing:.04em;padding-block:6px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums;background:var(--page)}
 
-.list{display:flex;flex-direction:column;gap:10px}
-.list .hd{display:flex;justify-content:space-between;align-items:center;font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:500}
-.list .hd button{font:inherit;font-weight:700;text-transform:none;letter-spacing:0;background:transparent;border:1px solid var(--bar);color:var(--bar);border-radius:8px;padding:5px 10px;cursor:pointer}
-.row{background:var(--card);border-radius:10px;border-left:5px solid var(--ok-chip);display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 12px 12px 14px;box-shadow:0 1px 2px rgba(0,0,0,.06);margin-bottom:10px}
-.row.bad{border-left-color:var(--bad)}
-.row .n{font-weight:700;font-size:1.05rem;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.row .s{font-size:.8rem;color:var(--muted)}
-.row .chip{flex:0 0 auto;background:var(--ok-chip);color:#fff;font-weight:700;font-size:.85rem;border-radius:8px;padding:9px 12px;border:0}
-.row.bad .chip{background:var(--bad)}
-.empty{color:var(--muted);font-size:.9rem;text-align:center;padding:14px}
-.foot{margin-top:auto;display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;font-size:.7rem;color:var(--muted);letter-spacing:.04em;padding-top:6px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
-
-.nav{background:var(--nav);display:flex;justify-content:space-around;align-items:center;padding-block:8px;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px))}
-.nav button,.nav label{background:transparent;border:0;color:#fff;font-size:1.35rem;width:44px;height:40px;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.nav{background:var(--nav);display:flex;justify-content:space-around;align-items:center;padding-block:6px;padding-bottom:calc(6px + env(safe-area-inset-bottom,0px))}
+.nav button,.nav label{background:transparent;border:0;color:#fff;font-size:1.35rem;width:46px;height:40px;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .nav button.active{background:var(--nav-active)}
-.nav button:focus-visible,.appbar .ic:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.nav button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 
 /* sheets */
-.sheet{position:absolute;left:0;right:0;bottom:0;z-index:8;background:var(--card);border-radius:16px 16px 0 0;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px;max-height:85%;overflow:auto;box-shadow:0 -6px 24px rgba(0,0,0,.25)}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:8;background:var(--card);border-radius:10px 10px 0 0;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px;max-height:85%;overflow:auto;box-shadow:0 -6px 24px rgba(0,0,0,.25)}
 .sheet h2{margin:0;font-size:1.05rem}
 .sheet label{font-size:.8rem;color:var(--muted);display:flex;flex-direction:column;gap:4px}
-.sheet input,.sheet textarea{font:inherit;width:100%;border:1px solid var(--line);border-radius:8px;padding:10px;background:#fff;color:var(--fg)}
+.sheet input,.sheet textarea{font:inherit;width:100%;border:1px solid var(--line);border-radius:4px;padding:10px;background:#fff;color:var(--fg)}
 .sheet .btns{display:flex;gap:10px;margin-top:4px;flex-wrap:wrap}
-.sheet .btns button,.sheet .btns label.fb{flex:1 1 120px;font:inherit;font-weight:700;border:0;border-radius:10px;padding:12px;cursor:pointer;background:var(--line);color:var(--fg);text-align:center;font-size:.9rem}
+.sheet .btns button,.sheet .btns label.fb{flex:1 1 120px;font:inherit;font-weight:700;border:0;border-radius:4px;padding:12px;cursor:pointer;background:var(--line);color:var(--fg);text-align:center;font-size:.9rem}
 .sheet .btns .primary{background:var(--bar);color:#fff}
-.sheet .btns a.btn-link{flex:1 1 120px;font-weight:700;border-radius:10px;padding:12px;background:var(--line);color:var(--fg);text-align:center;font-size:.9rem;text-decoration:none}
+.sheet .btns a.btn-link{flex:1 1 120px;font-weight:700;border-radius:4px;padding:12px;background:var(--line);color:var(--fg);text-align:center;font-size:.9rem;text-decoration:none}
 .sheet .log div{border-top:1px solid var(--line);padding:8px 0;font-size:.85rem}
 .sheet .log span{color:var(--muted);margin-right:8px;font-variant-numeric:tabular-nums}
 .logoprev{display:flex;align-items:center;gap:12px}
-.logoprev img{height:48px;max-width:160px;object-fit:contain;border:1px solid var(--line);border-radius:8px;padding:4px;background:#fff}
-.sys{border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:.82rem}
+.logoprev img{height:48px;max-width:160px;object-fit:contain;border:1px solid var(--line);border-radius:4px;padding:4px;background:#fff}
+.sys{border:1px solid var(--line);border-radius:4px;padding:10px 12px;font-size:.82rem}
 .syshd{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
 .sysrow{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-top:1px solid var(--line)}
 .sysrow span:first-child{color:var(--muted)} .sysrow span:last-child{font-weight:500;text-align:right;font-variant-numeric:tabular-nums}
 .dlhint{font-size:.78rem;color:var(--muted);line-height:1.45}
-.colrow{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--muted);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+.colrow{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:6px 8px}
 .colrow input{width:38px;height:30px;border:0;padding:0;background:none;flex:0 0 auto}
 .scrim{position:absolute;inset:0;z-index:7;background:rgba(0,0,0,.3)}
 
-/* scanner panel (no preview) */
-.camhold{position:absolute;width:1px;height:1px;overflow:hidden;opacity:.01;pointer-events:none;left:0;top:0}
-.camhold video{width:2px;height:2px}
-.scanpanel{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:18px 16px;text-align:center}
-.scanstate{display:flex;align-items:center;justify-content:center;gap:10px;font-weight:700;letter-spacing:.14em;font-size:.95rem;color:var(--bar)}
-.scanstate .dot{width:12px;height:12px;border-radius:50%;background:var(--frame);box-shadow:0 0 0 0 rgba(61,220,132,.6);animation:ping 1.6s infinite}
-.scanstate.off .dot{background:#b91c1c;animation:none;box-shadow:none}.scanstate.off{color:#b91c1c}
-@keyframes ping{0%{box-shadow:0 0 0 0 rgba(61,220,132,.6)}70%{box-shadow:0 0 0 10px rgba(61,220,132,0)}100%{box-shadow:0 0 0 0 rgba(61,220,132,0)}}
-@media (prefers-reduced-motion:reduce){.scanstate .dot{animation:none}}
-.scanhint{margin-top:8px;color:var(--muted);font-size:.95rem}
-.scanerr{margin-top:10px;font-size:.85rem;color:#b91c1c;line-height:1.4}
-.lastbox{background:var(--card);border:1px solid var(--line);border-radius:6px;overflow:hidden}
-.lasthd{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--page);border-bottom:1px solid var(--line);font-size:.75rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700}
-.lasthd button{font:inherit;font-weight:700;font-size:.8rem;text-transform:none;letter-spacing:0;background:transparent;border:1px solid var(--bar);color:var(--bar);border-radius:4px;padding:4px 10px;cursor:pointer}
-.lastbody{padding:10px 12px;font-family:ui-monospace,"Roboto Mono",Consolas,monospace;font-size:.9rem;line-height:1.75;font-variant-numeric:tabular-nums}
-.lastbody .k{color:var(--muted);display:inline-block;min-width:9ch}
-.lastbody .res{font-weight:700;letter-spacing:.06em}
-.lastbody .res.ok{color:var(--ok-chip)}.lastbody .res.bad{color:var(--bad)}
-.lastbody .none{color:var(--muted)}
 /* splash */
 .splash{position:absolute;inset:0;z-index:30;background:var(--status);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:24px;transition:opacity .4s}
 .splash.out{opacity:0;pointer-events:none}
 .splash img{width:120px;max-height:120px;object-fit:contain;background:#fff;border-radius:18px;padding:8px}
-.spMark{width:96px;height:96px;border-radius:22px;background:var(--bar);display:flex;align-items:center;justify-content:center;font-size:48px;color:var(--frame)}
+.spMark{width:96px;height:96px;border-radius:22px;background:#fff;display:flex;align-items:center;justify-content:center}
+.spMark i{width:60px;height:60px;border-radius:50%;background:var(--bar);box-shadow:0 0 0 6px #fff,0 0 0 10px var(--bar);display:flex;align-items:center;justify-content:center}
+.spMark i::after{content:"";width:22px;height:22px;border-radius:50%;border:5px solid #fff}
 .spTitle{font-size:1.5rem;font-weight:700;letter-spacing:.04em;text-wrap:balance}
 .spSub{font-size:.9rem;opacity:.8}
 .spBar{width:min(60%,240px);height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden;margin-top:10px}
 .spBar i{display:block;height:100%;width:0;background:var(--frame);transition:width 1.4s ease-out}
 .spFoot{position:absolute;bottom:calc(20px + env(safe-area-inset-bottom,0px));font-size:.7rem;opacity:.6;letter-spacing:.06em;font-variant-numeric:tabular-nums}
-/* result */
-.result{position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;color:#fff;background:var(--ok)}
-.result.bad{background:var(--bad)}
-.txn{display:flex;justify-content:space-between;gap:10px;font-size:.68rem;letter-spacing:.02em;padding-block:6px;background:rgba(0,0,0,.18);font-variant-numeric:tabular-nums;white-space:nowrap}.txn span{overflow:hidden;text-overflow:ellipsis}
-.result .body{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;align-items:center;gap:8px;padding-block:18px;text-align:center}
-.result .rlogo{height:56px;max-width:200px;object-fit:contain;background:#fff;border-radius:8px;padding:4px}
-.result .lab{font-size:1rem;opacity:.95}
-.result .vicon{width:72px;height:72px;border-radius:50%;border:4px solid #0f2a1c;color:#0f2a1c;display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:700;line-height:1;margin-bottom:4px}
-.result.bad .vicon{border-color:#fff;color:#fff}
-.result .verdict{font-size:clamp(2.2rem,11vw,3.2rem);font-weight:700;letter-spacing:.02em;line-height:1;color:#0f2a1c;text-wrap:balance}
-.result.bad .verdict{color:#fff}
-.result .why{font-size:1.05rem;font-weight:500;margin-bottom:8px;text-wrap:balance}
-.result .card{width:100%;background:rgba(255,255,255,.85);color:#111;border-radius:10px;padding:4px 14px;text-align:left}
-.result .card div{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid rgba(0,0,0,.08);font-size:.95rem}
-.result .card div:last-child{border-bottom:0}
-.result .card span:first-child{color:#444}
-.result .card span:first-child{white-space:nowrap}.result .card span:last-child{font-weight:700;text-align:right;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
-.result .act{padding-block:12px}
-.result .act button{width:100%;font:inherit;font-weight:700;font-size:1.05rem;border:0;border-radius:12px;padding:16px;cursor:pointer;background:var(--ok-dark);color:#fff}
-.result.bad .act button{background:#fff;color:var(--bad-dark)}
-.result .act button.sec,.result.bad .act button.sec{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.7);margin-top:8px;padding:12px}
 </style>
 
 <div class="app">
   <div class="statusbar pad"><span id="clock">--:--</span><span class="r"><span id="net">▾▴ 4G</span><span class="batt"><i><b id="battFill" style="width:70%"></b></i><span id="battPct">—</span></span></span></div>
-  <div class="appbar pad"><button class="ic" id="menuBtn" type="button" title="Napló">≡</button><img class="logo" id="logo" alt="" hidden><h1 id="title">Jegyellenőrzés</h1></div>
-  <div class="tripbar pad" id="tripbar"></div>
+  <div class="topbar pad">
+    <input id="codeInput" autocomplete="off" placeholder="Azonosító" data-p="codeInput">
+    <button type="button" class="tb ico" id="camBtn" title="Kamera előnézet">▣</button>
+    <button type="button" class="tb" id="enterBtn" data-t="enterBtn">Bevitel</button>
+  </div>
+  <div class="infobar pad" id="tripbar"></div>
 
-  <div class="main pad" id="main">
+  <div class="main" id="main">
     <div class="camhold" id="camHold"><video id="video" playsinline muted autoplay></video></div>
     <div class="cam" id="cam" hidden>
       <img id="still" alt="" hidden>
@@ -160,25 +147,34 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       <div class="frame" id="frame" hidden><span class="laser"></span></div>
       <div class="cap" id="cap">Olvassa be a belépőjegy kódját</div>
     </div>
-    <div class="scanpanel" id="scanpanel">
-      <div class="scanstate"><span class="dot" id="scanDot"></span><span id="scanState" data-t="scanReady">SZKENNER AKTÍV</span></div>
+    <div class="panel idle pad" id="panel">
+      <img class="rlogo" id="rLogo" alt="" hidden>
+      <div class="rname" id="rName"></div>
+      <div class="scanstate" id="scanstate"><span class="dot"></span><span id="scanState" data-t="scanReady">SZKENNER AKTÍV</span></div>
       <div class="scanhint" id="scanHint">Olvassa be a belépőjegy kódját</div>
       <div class="scanerr" id="scanErr" hidden></div>
-    </div>
-    <div class="lastbox">
-      <div class="lasthd"><span data-t="lastHd">Utolsó ellenőrzés</span><button type="button" id="manualBtn" data-t="manualBtn">Kézi bevitel</button></div>
+      <div class="vwrap" id="vwrap" hidden>
+        <div class="lab" data-t="validityLabel">Érvényesség:</div>
+        <div class="verdict" id="rVerdict">ÉRVÉNYES</div>
+        <div class="why" id="rWhy"></div>
+        <div class="details" id="rCard"></div>
+        <div class="txn" id="rTxn"></div>
+        <div class="act"><button type="button" id="rMain" hidden>Elutasítás · következő vendég</button><button type="button" class="sec" id="rSec" hidden>Mégis beengedem</button></div>
+      </div>
       <div class="lastbody" id="last"></div>
     </div>
-    <div class="foot"><span id="footTerm">JEGYELLENŐR TERMINÁL · T-0412</span><span id="footId"></span><span id="footCount"></span></div>
+    <div class="foot pad"><span id="footTerm">JEGYELLENŐR TERMINÁL · T-0412</span><span id="footId"></span><span id="footCount"></span></div>
   </div>
 
   <div class="nav">
+    <button type="button" id="navBack" title="Vissza / törlés">←</button>
     <button type="button" id="navHome" title="Kamera váltás">⟲</button>
-    <button type="button" class="active" id="navScan" title="Szkenner">▣</button>
-    <button type="button" id="navLog" title="Napló / letöltés">☰</button>
-    <button type="button" id="navSet" title="Beállítások">⚙</button>
-    <label for="file" title="Fotó / kép">➜</label>
+    <label for="file" title="Fotó / kép">▦</label>
     <input type="file" id="file" accept="image/*" capture="environment">
+    <button type="button" id="navLog" title="Napló">☰</button>
+    <button type="button" id="navSet" title="Beállítások">⚙</button>
+    <button type="button" id="navScan" class="active" title="Szkenner" hidden>▣</button>
+    <button type="button" id="menuBtn" hidden>≡</button>
   </div>
 
   <div class="scrim" id="scrim" hidden></div>
@@ -246,30 +242,13 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 
   <div class="splash" id="splash">
     <img id="spLogo" alt="" hidden>
-    <div class="spMark" id="spMark">▣</div>
+    <div class="spMark" id="spMark"><i></i></div>
     <div class="spTitle" id="spTitle">Jegyellenőr terminál</div>
     <div class="spSub" id="spSub">Rendszer betöltése…</div>
     <div class="spBar"><i id="spFill"></i></div>
     <div class="spFoot" id="spFoot"></div>
   </div>
 
-  <div class="result" id="result" hidden>
-    <div class="appbar pad"><button class="ic" id="rBack" type="button" title="Vissza">←</button><h1 data-t="resTitle">Ellenőrzés eredménye</h1></div>
-    <div class="tripbar pad"><b id="rCode"></b><br><span id="rTrip"></span></div>
-    <div class="txn pad"><span id="rTxn"></span><span id="rInsp"></span></div>
-    <div class="body pad">
-      <img class="rlogo" id="rLogo" alt="" hidden>
-      <div class="vicon" id="rIcon">✓</div>
-      <div class="lab" data-t="validityLabel">Érvényesség:</div>
-      <div class="verdict" id="rVerdict">ÉRVÉNYES</div>
-      <div class="why" id="rWhy"></div>
-      <div class="card" id="rCard"></div>
-    </div>
-    <div class="act pad">
-      <button type="button" id="rMain">Beengedés · következő vendég</button>
-      <button type="button" class="sec" id="rSec" hidden>Mégis beengedem</button>
-    </div>
-  </div>
 </div>
 
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
@@ -293,7 +272,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     catch(e){ $('mfLink').href='data:application/manifest+json;base64,'+b64u(JSON.stringify(man)); }
   }
   const TX={
-    scanReady:['Szkenner állapot: aktív','SZKENNER AKTÍV'], scanOff:['Szkenner állapot: leállt','SZKENNER LEÁLLT'], lastHd:['Utolsó ellenőrzés – cím','Utolsó ellenőrzés'], lastNone:['Utolsó ellenőrzés – nincs','Még nem történt ellenőrzés.'], lRes:['Utolsó: eredmény','Eredmény'], lCode:['Utolsó: jegy','Jegy'], lName:['Utolsó: vendég','Vendég'], lType:['Utolsó: típus','Típus'], lTime:['Utolsó: idő','Idő'], lToday:['Mai számláló előtag','Ma:'], lIn:['Számláló: beléptetve','beléptetve'], lOut:['Számláló: elutasítva','elutasítva'],
+    enterBtn:['Felső sáv: Bevitel gomb','Bevitel'], codePh:['Felső sáv: azonosító mező','Azonosító'], scanReady:['Szkenner állapot: aktív','SZKENNER AKTÍV'], scanOff:['Szkenner állapot: leállt','SZKENNER LEÁLLT'], lastHd:['Utolsó ellenőrzés – cím','Utolsó ellenőrzés'], lastNone:['Utolsó ellenőrzés – nincs','Még nem történt ellenőrzés.'], lRes:['Utolsó: eredmény','Eredmény'], lCode:['Utolsó: jegy','Jegy'], lName:['Utolsó: vendég','Vendég'], lType:['Utolsó: típus','Típus'], lTime:['Utolsó: idő','Idő'], lToday:['Mai számláló előtag','Ma:'], lIn:['Számláló: beléptetve','beléptetve'], lOut:['Számláló: elutasítva','elutasítva'],
     listHd:['Lista címe (rejtett)','Ellenőrzési napló'], manualBtn:['Kézi bevitel gomb','Kézi bevitel'], footTerm:['Lábléc: terminál felirat','JEGYELLENŐR TERMINÁL'], footInsp:['Lábléc: ellenőr felirat','Jegyellenőr'], footCount:['Lábléc: számláló','Beengedve:'],
     emptyList:['Üres lista szövege','Még nincs beolvasás. Tartsa a jegy kódját a keretbe.'],
     manualTitle:['Kézi bevitel – cím','Kézi bevitel'], manualLabel:['Kézi bevitel – mező','Jegy kódja / sorszáma'], manualOk:['Kézi bevitel – gomb','Ellenőriz'], cancel:['Mégse gomb','Mégse'], close:['Bezár gomb','Bezár'],
@@ -308,15 +287,15 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     defName:['Ismeretlen vendég neve','Vendég'], defType:['Alap jegytípus','Belépőjegy'],
     camStart:['Kamera: indítás','Kamera indítása…'], camStopped:['Kamera: leállítva','Kamera leállítva.'], camNoPerm:['Kamera: nincs engedély','Nincs kameraengedély. Chrome: a címsor lakat ikonja → Engedélyek → Kamera: engedélyez, majd frissíts. Vagy használd a ➜ gombot.'], camFail:['Kamera: hiba','A kamera nem indult el. Használd a ➜ gombot.'], noCode:['Nincs kód a képen','Nem található kód a képen'] };
   const tx=k=>(cfg.tx&&cfg.tx[k])||TX[k][1];
-  const COL={status:['Állapotsor / indítóképernyő','#0f2a1c'],bar:['Fejléc','#2e7d4f'],trip:['Fejléc alatti sáv','#3cb371'],nav:['Alsó menüsáv','#1b4332'],'nav-active':['Aktív menügomb','#3cb371'],page:['Háttér','#edf5ee'],card:['Kártyák','#ffffff'],'ok-chip':['Lista: érvényes jelzés','#2e7d4f'],ok:['ÉRVÉNYES háttér','#3ddc84'],'ok-dark':['ÉRVÉNYES gomb / ikon','#0f2a1c'],bad:['ÉRVÉNYTELEN háttér','#e5383b'],'bad-dark':['ÉRVÉNYTELEN gomb szöveg','#b11e22'],frame:['Kamera keret','#3ddc84'],laser:['Lézervonal','#ff3b30']};
+  const COL={status:['Állapotsor / indítóképernyő','#1f2a33'],bar:['Felső sáv','#37474f'],btn:['Felső sáv gombjai','#546e7a'],trip:['Információs sáv','#1e88e5'],nav:['Alsó menüsáv','#263238'],'nav-active':['Aktív menügomb','#1e88e5'],page:['Háttér (készenlét)','#e4e7ea'],card:['Panelek','#ffffff'],'ok-chip':['Utolsó: érvényes szín','#2e7d32'],ok:['ÉRVÉNYES háttér','#4caf50'],'ok-dark':['ÉRVÉNYES sötét','#1b5e20'],bad:['ÉRVÉNYTELEN háttér','#e53935'],'bad-dark':['ÉRVÉNYTELEN gomb szöveg','#b71c1c'],frame:['Szkenner jelző / keret','#69f0ae'],laser:['Lézervonal','#ff3b30']};
   function applyColors(){ const r=document.documentElement.style; for(const k in COL){ const v=cfg.colors&&cfg.colors[k]; if(v) r.setProperty('--'+k,v); else r.removeProperty('--'+k); } const th=document.querySelector('meta[name=theme-color]'); if(th) th.content=(cfg.colors&&cfg.colors.status)||COL.status[1]; }
-  function applyTexts(){ document.querySelectorAll('[data-t]').forEach(el=>{ el.textContent=tx(el.getAttribute('data-t')); }); }
+  function applyTexts(){ document.querySelectorAll('[data-t]').forEach(el=>{ el.textContent=tx(el.getAttribute('data-t')); }); $('codeInput').placeholder=tx('codePh'); }
   const cfg=Object.assign({title:'Jegyellenőrzés',sub:'Beléptetési pont · Főbejárat',welcome:'Belépés engedélyezve. Jó szórakozást!',deny:'Belépés megtagadva',id:'E-0001',logo:'',cap:'Olvassa be a belépőjegy kódját',term:'T-0412',icon:'',pin:'0000',tx:{},colors:{},spTitle:'',spSub:'',spSec:2,preview:false},window.__PRESET||{},store.get('cfg',{}));
 
   function drawHeader(){
-    $('title').textContent=cfg.title||'Jegyellenőrzés';
-    const t=$('tripbar'); t.textContent=''; const b=document.createElement('b'); b.textContent=cfg.sub||''; t.append(b);
-    const has=!!cfg.logo; $('logo').hidden=!has; $('rLogo').hidden=!has; if(has){ $('logo').src=cfg.logo; $('rLogo').src=cfg.logo; }
+    $('rName').textContent=cfg.title||'Jegyellenőrzés';
+    const t=$('tripbar'); t.textContent=cfg.sub||'';
+    const has=!!cfg.logo; $('rLogo').hidden=!has; if(has){ $('rLogo').src=cfg.logo; }
     applyTexts();
     $('sysId').textContent=cfg.id; $('footId').textContent=tx('footInsp')+' '+cfg.id; $('cap').textContent=cfg.cap||'Olvassa be a belépőjegy kódját'; $('scanHint').textContent=cfg.cap||'Olvassa be a belépőjegy kódját';
     $('sysTerm').textContent=cfg.term; $('footTerm').textContent=tx('footTerm')+' · '+cfg.term;
@@ -434,24 +413,22 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     const t=parseTicket(text), v=validate(t), now=new Date();
     if(isTest){ t.type=(t.type||'')+' (TESZT)'; }
     current={t,v};
-    const R=$('result'); R.className='result'+(v.ok?'':' bad'); R.hidden=false;
+    const R=$('panel'); R.className='panel pad '+(v.ok?'ok':'bad'); $('vwrap').hidden=false;
     const txn=(store.get('txn',0)||0)+1; store.set('txn',txn);
     $('rTxn').textContent=tx('txn')+' '+now.getFullYear()+pad(now.getMonth()+1)+pad(now.getDate())+'-'+String(txn).padStart(5,'0');
-    $('rInsp').textContent=tx('footInsp')+' '+cfg.id+' · '+cfg.term;
-    $('rCode').textContent=tx('codeLabel')+' '+shortCode(t.code); $('rTrip').textContent=cfg.title+(cfg.sub?' · '+cfg.sub:'');
-    $('rVerdict').textContent=v.verdict; $('rIcon').textContent=v.ok?'✓':(v.kind==='used'?'!':'✕'); $('rWhy').textContent=v.ok?v.why:(v.why+(cfg.deny?' · '+cfg.deny:''));
+    $('rTxn').textContent+=' · '+tx('footInsp')+' '+cfg.id+' · '+cfg.term; $('codeInput').value=shortCode(t.code);
+    $('rVerdict').textContent=v.verdict; $('rWhy').textContent=v.ok?v.why:(v.why+(cfg.deny?' · '+cfg.deny:''));
     const card=$('rCard'); card.innerHTML='';
     const rows=[]; if(t.name) rows.push([tx('cGuest'),t.name]); if(t.type) rows.push([tx('cType'),t.type]); rows.push([tx('cCode'),shortCode(t.code)]);
     if(t.start) rows.push([tx('cFrom'),fmtFull(t.start)]); if(t.end) rows.push([tx('cTo'),fmtFull(t.end)]); rows.push([tx('cChecked'),fmtFullS(now)]); if(cfg.sub) rows.push([tx('cPoint'),cfg.sub]);
     for(const [k,val] of rows){ const d=document.createElement('div'),a=document.createElement('span'),b=document.createElement('span'); a.textContent=k; b.textContent=val; d.append(a,b); card.appendChild(d); }
-    $('rMain').textContent=v.ok?tx('btnAdmit'):tx('btnReject'); $('rSec').textContent=tx('btnOverride');
-    $('rSec').hidden=v.ok;
+    $('rMain').textContent=tx('btnReject'); $('rSec').textContent=tx('btnOverride'); $('rMain').hidden=v.ok; $('rSec').hidden=v.ok;
     hist.unshift({name:t.name,type:t.type,time:fmtHM(now),ok:v.ok,let:false,code:t.code,verdict:v.verdict}); store.set('hist',hist); renderRows();
     try{ navigator.vibrate&&navigator.vibrate(v.ok?[80]:[120,80,120]); }catch(e){}
     beep(v.ok);
   }
-  function closeResult(){ $('result').hidden=true; last=''; if(!running) startCamera(); }
-  $('rMain').addEventListener('click',closeResult); $('rBack').addEventListener('click',closeResult);
+  function closeResult(){ $('panel').className='panel idle pad'; $('vwrap').hidden=true; $('codeInput').value=''; last=''; if(!running) startCamera(); }
+  $('rMain').addEventListener('click',closeResult); $('navBack').addEventListener('click',closeResult);
   $('rSec').addEventListener('click',()=>{ if(current&&!current.v.ok){ hist[0].let=true; const used=store.get('used',{}); used[current.t.code]=fmtFull(new Date()); store.set('used',used); store.set('hist',hist); const n=store.get('notes',[]); n.unshift({t:fmtFull(new Date()),x:'Kézi beengedés · '+(current.t.name?current.t.name+' · ':'')+shortCode(current.t.code)+' · '+cfg.id}); store.set('notes',n); renderRows(); } closeResult(); });
 
   /* sound */
@@ -484,13 +461,13 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     still.hidden=true; camMsg.hidden=true; frame.hidden=false; video.srcObject=stream; await video.play().catch(()=>{});
     running=true; $('navScan').classList.add('active'); applyPreview(); setScan(true); loop();
   }
-  function setScan(on,msg){ const st=$('scanpanel').querySelector('.scanstate'); st.classList.toggle('off',!on); $('scanState').textContent=on?tx('scanReady'):tx('scanOff'); $('scanHint').textContent=cfg.cap||'Olvassa be a belépőjegy kódját'; $('scanErr').hidden=!msg; $('scanErr').textContent=msg||''; }
-  function applyPreview(){ const on=!!cfg.preview; $('cam').hidden=!on; if(on){ $('cam').insertBefore(video,$('cam').firstChild); video.hidden=!running; } else { $('camHold').appendChild(video); video.hidden=false; } }
+  function setScan(on,msg){ const st=$('scanstate'); st.classList.toggle('off',!on); $('scanState').textContent=on?tx('scanReady'):tx('scanOff'); $('scanHint').textContent=cfg.cap||'Olvassa be a belépőjegy kódját'; $('scanErr').hidden=!msg; $('scanErr').textContent=msg||''; }
+  function applyPreview(){ const on=!!cfg.preview; $('cam').hidden=!on; $('camBtn').classList.toggle('on',on); if(on){ $('cam').insertBefore(video,$('cam').firstChild); video.hidden=!running; } else { $('camHold').appendChild(video); video.hidden=false; } }
   function stopCamera(){ running=false; if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; } frame.hidden=true; camMsg.hidden=false; camMsg.textContent=tx('camStopped'); $('navScan').classList.remove('active'); setScan(false); }
   function camFail(m){ camMsg.hidden=false; camMsg.textContent=m; frame.hidden=true; setScan(false,m); }
   async function loop(){
     if(!running) return;
-    if(!busy && video.videoWidth && $('result').hidden){
+    if(!busy && video.videoWidth){
       busy=true;
       try{ const w=Math.min(video.videoWidth,960), h=Math.round(video.videoHeight*w/video.videoWidth); work.width=w; work.height=h; wctx.drawImage(video,0,0,w,h);
         const txt=await decodeCanvas(work); if(txt){ const now=Date.now(); if(!(txt===last&&now-lastAt<3000)){ last=txt; lastAt=now; scanBlip(); showResult(txt); } } }catch(e){}
@@ -503,6 +480,10 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     if(cams.length<2){ $('scanHint').textContent='Csak egy kamera érhető el'; setTimeout(()=>{$('scanHint').textContent=cfg.cap},2000); return; }
     const i=cams.findIndex(d=>d.deviceId===camId); camId=cams[(i+1)%cams.length].deviceId; startCamera(); });
   $('navScan').addEventListener('click',()=>{ if(!running) startCamera(); closeSheets(); });
+  function enterGo(){ const v=$('codeInput').value.trim(); if(!v) return; $('codeInput').blur(); showResult(v); }
+  $('enterBtn').addEventListener('click',enterGo); $('codeInput').addEventListener('keydown',e=>{ if(e.key==='Enter') enterGo(); });
+  $('codeInput').addEventListener('focus',()=>{ if(!$('vwrap').hidden) $('codeInput').value=''; });
+  $('camBtn').addEventListener('click',()=>{ cfg.preview=!cfg.preview; store.set('cfg',cfg); applyPreview(); if(!running) startCamera(); });
   $('file').addEventListener('change',()=>{ const f=$('file').files&&$('file').files[0]; if(!f) return; const url=URL.createObjectURL(f); const img=new Image();
     img.onload=async()=>{ if(running) stopCamera(); still.src=url; still.hidden=false; camMsg.hidden=true; let found=null;
       for(const s of [1200,800,1800]){ const sc=Math.min(1,s/Math.max(img.width,img.height)); work.width=Math.round(img.width*sc); work.height=Math.round(img.height*sc); wctx.drawImage(img,0,0,work.width,work.height); found=await decodeCanvas(work); if(found) break; }
@@ -516,7 +497,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   function openSheet(id){ closeSheets(); $(id).hidden=false; $('scrim').hidden=false; }
   $('scrim').addEventListener('click',closeSheets);
   document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',closeSheets));
-  $('manualBtn').addEventListener('click',()=>{ openSheet('manualBox'); $('manualInput').focus(); });
+  
   function manualGo(){ const v=$('manualInput').value.trim(); if(!v) return; closeSheets(); $('manualInput').value=''; showResult(v); }
   $('manualOk').addEventListener('click',manualGo); $('manualInput').addEventListener('keydown',e=>{ if(e.key==='Enter') manualGo(); });
   function renderNotes(){ const n=store.get('notes',[]); const L=$('noteLog'); L.innerHTML=''; for(const it of n.slice(0,30)){ const d=document.createElement('div'),s=document.createElement('span'); s.textContent=it.t; d.append(s,document.createTextNode(it.x)); L.appendChild(d); } }
