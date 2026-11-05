@@ -91,8 +91,20 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 .sysrow{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-top:1px solid var(--line)}
 .sysrow span:first-child{color:var(--muted)} .sysrow span:last-child{font-weight:500;text-align:right;font-variant-numeric:tabular-nums}
 .dlhint{font-size:.78rem;color:var(--muted);line-height:1.45}
+.colrow{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--muted);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+.colrow input{width:38px;height:30px;border:0;padding:0;background:none;flex:0 0 auto}
 .scrim{position:absolute;inset:0;z-index:7;background:rgba(0,0,0,.3)}
 
+/* splash */
+.splash{position:absolute;inset:0;z-index:30;background:var(--status);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:24px;transition:opacity .4s}
+.splash.out{opacity:0;pointer-events:none}
+.splash img{width:120px;max-height:120px;object-fit:contain;background:#fff;border-radius:18px;padding:8px}
+.spMark{width:96px;height:96px;border-radius:22px;background:var(--bar);display:flex;align-items:center;justify-content:center;font-size:48px;color:var(--frame)}
+.spTitle{font-size:1.5rem;font-weight:700;letter-spacing:.04em;text-wrap:balance}
+.spSub{font-size:.9rem;opacity:.8}
+.spBar{width:min(60%,240px);height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden;margin-top:10px}
+.spBar i{display:block;height:100%;width:0;background:var(--frame);transition:width 1.4s ease-out}
+.spFoot{position:absolute;bottom:calc(20px + env(safe-area-inset-bottom,0px));font-size:.7rem;opacity:.6;letter-spacing:.06em;font-variant-numeric:tabular-nums}
 /* result */
 .result{position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;color:#fff;background:var(--ok)}
 .result.bad{background:var(--bad)}
@@ -181,6 +193,9 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <label>Üdvözlő felirat (érvényes jegynél)<input id="sWelcome" placeholder="Jó szórakozást!"></label>
     <label>Elutasító felirat (érvénytelen jegynél)<input id="sDeny" placeholder="Belépés nem engedélyezett"></label>
     <label>Felirat a kamera alatt<input id="sCap" placeholder="Olvassa be a belépőjegy kódját"></label>
+    <label>Indítóképernyő – név<input id="sSpTitle" placeholder="Jegyellenőr terminál"></label>
+    <label>Indítóképernyő – alsó felirat<input id="sSpSub" placeholder="Rendszer betöltése…"></label>
+    <label>Indítóképernyő hossza (másodperc)<input id="sSpSec" inputmode="decimal" placeholder="2"></label>
     <label>Jegyellenőr azonosító<input id="sId"></label>
     <label>Terminál azonosító<input id="sTerm" placeholder="T-0412"></label>
     <div class="btns"><button type="button" data-close>Mégse</button><button type="button" class="primary" id="setSave">Mentés</button></div>
@@ -196,8 +211,20 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <h2>Főnöki beállítások – szövegek</h2>
     <div class="dlhint">Üresen hagyott mező = alapértelmezett szöveg. A módosítások mentés után azonnal érvényesek.</div>
     <div id="bossFields" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div class="syshd" style="margin-top:6px">Színek</div>
+    <div id="bossColors" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+    <div class="btns"><button type="button" id="colorReset">Alapszínek</button></div>
     <label>Új PIN-kód (üres = marad)<input id="newPin" inputmode="numeric" maxlength="8"></label>
     <div class="btns"><button type="button" data-close>Mégse</button><button type="button" id="bossReset">Alapértelmezett szövegek</button><button type="button" class="primary" id="bossSave">Mentés</button></div>
+  </div>
+
+  <div class="splash" id="splash">
+    <img id="spLogo" alt="" hidden>
+    <div class="spMark" id="spMark">▣</div>
+    <div class="spTitle" id="spTitle">Jegyellenőr terminál</div>
+    <div class="spSub" id="spSub">Rendszer betöltése…</div>
+    <div class="spBar"><i id="spFill"></i></div>
+    <div class="spFoot" id="spFoot"></div>
   </div>
 
   <div class="result" id="result" hidden>
@@ -253,8 +280,10 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     defName:['Ismeretlen vendég neve','Vendég'], defType:['Alap jegytípus','Belépőjegy'],
     camStart:['Kamera: indítás','Kamera indítása…'], camStopped:['Kamera: leállítva','Kamera leállítva.'], camNoPerm:['Kamera: nincs engedély','Nincs kameraengedély. Chrome: a címsor lakat ikonja → Engedélyek → Kamera: engedélyez, majd frissíts. Vagy használd a ➜ gombot.'], camFail:['Kamera: hiba','A kamera nem indult el. Használd a ➜ gombot.'], noCode:['Nincs kód a képen','Nem található kód a képen'] };
   const tx=k=>(cfg.tx&&cfg.tx[k])||TX[k][1];
+  const COL={status:['Állapotsor / indítóképernyő','#0f2a1c'],bar:['Fejléc','#2e7d4f'],trip:['Fejléc alatti sáv','#3cb371'],nav:['Alsó menüsáv','#1b4332'],'nav-active':['Aktív menügomb','#3cb371'],page:['Háttér','#edf5ee'],card:['Kártyák','#ffffff'],'ok-chip':['Lista: érvényes jelzés','#2e7d4f'],ok:['ÉRVÉNYES háttér','#3ddc84'],'ok-dark':['ÉRVÉNYES gomb / ikon','#0f2a1c'],bad:['ÉRVÉNYTELEN háttér','#e5383b'],'bad-dark':['ÉRVÉNYTELEN gomb szöveg','#b11e22'],frame:['Kamera keret','#3ddc84'],laser:['Lézervonal','#ff3b30']};
+  function applyColors(){ const r=document.documentElement.style; for(const k in COL){ const v=cfg.colors&&cfg.colors[k]; if(v) r.setProperty('--'+k,v); else r.removeProperty('--'+k); } const th=document.querySelector('meta[name=theme-color]'); if(th) th.content=(cfg.colors&&cfg.colors.status)||COL.status[1]; }
   function applyTexts(){ document.querySelectorAll('[data-t]').forEach(el=>{ el.textContent=tx(el.getAttribute('data-t')); }); }
-  const cfg=Object.assign({title:'Jegyellenőrzés',sub:'Beléptetési pont · Főbejárat',welcome:'Belépés engedélyezve. Jó szórakozást!',deny:'Belépés megtagadva',id:'E-0001',logo:'',cap:'Olvassa be a belépőjegy kódját',term:'T-0412',icon:'',pin:'0000',tx:{}},window.__PRESET||{},store.get('cfg',{}));
+  const cfg=Object.assign({title:'Jegyellenőrzés',sub:'Beléptetési pont · Főbejárat',welcome:'Belépés engedélyezve. Jó szórakozást!',deny:'Belépés megtagadva',id:'E-0001',logo:'',cap:'Olvassa be a belépőjegy kódját',term:'T-0412',icon:'',pin:'0000',tx:{},colors:{},spTitle:'',spSub:'',spSec:2},window.__PRESET||{},store.get('cfg',{}));
 
   function drawHeader(){
     $('title').textContent=cfg.title||'Jegyellenőrzés';
@@ -267,7 +296,14 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   }
   const shiftStart=(()=>{ let v=store.get('shift',null); if(!v){ v=Date.now(); store.set('shift',v); } return new Date(v); })();
   $('sysStart').textContent=fmtFull(shiftStart);
-  drawHeader(); applyIcon();
+  drawHeader(); applyIcon(); applyColors();
+  /* splash */
+  (function(){ const sp=$('splash'); $('spTitle').textContent=cfg.spTitle||cfg.title||'Jegyellenőr terminál'; $('spSub').textContent=cfg.spSub||'Rendszer betöltése…';
+    if(cfg.logo){ $('spLogo').src=cfg.logo; $('spLogo').hidden=false; $('spMark').hidden=true; }
+    $('spFoot').textContent=(cfg.term||'')+' · '+tx('footInsp')+' '+cfg.id;
+    requestAnimationFrame(()=>{ $('spFill').style.width='100%'; });
+    const ms=Math.max(0,Math.min(15,parseFloat(cfg.spSec)||0))*1000;
+    setTimeout(()=>{ sp.classList.add('out'); setTimeout(()=>{ sp.hidden=true; },450); },ms||1); })();
 
   /* status bar */
   setInterval(()=>{$('clock').textContent=fmtHM(new Date())},1000); $('clock').textContent=fmtHM(new Date());
@@ -446,7 +482,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 
   /* settings incl. logo upload (stored as a small data URL) */
   let pendingLogo=null;
-  $('navSet').addEventListener('click',()=>{ $('sTitle').value=cfg.title; $('sSub').value=cfg.sub; $('sWelcome').value=cfg.welcome; $('sDeny').value=cfg.deny; $('sId').value=cfg.id; $('sCap').value=cfg.cap; $('sTerm').value=cfg.term;
+  $('navSet').addEventListener('click',()=>{ $('sTitle').value=cfg.title; $('sSub').value=cfg.sub; $('sWelcome').value=cfg.welcome; $('sDeny').value=cfg.deny; $('sId').value=cfg.id; $('sCap').value=cfg.cap; $('sTerm').value=cfg.term; $('sSpTitle').value=cfg.spTitle||''; $('sSpSub').value=cfg.spSub||''; $('sSpSec').value=cfg.spSec;
     pendingLogo=cfg.logo||null; $('sLogoPrev').hidden=!pendingLogo; if(pendingLogo) $('sLogoPrev').src=pendingLogo;
     pendingIcon=cfg.icon||null; $('sIconPrev').hidden=false; $('sIconPrev').src=pendingIcon||DEFAULT_ICON; openSheet('setBox'); });
   let pendingIcon=null;
@@ -460,15 +496,18 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       c.getContext('2d').drawImage(img,0,0,c.width,c.height); pendingLogo=c.toDataURL('image/png'); $('sLogoPrev').src=pendingLogo; $('sLogoPrev').hidden=false; URL.revokeObjectURL(url); $('sLogo').value=''; };
     img.src=url; });
   $('sLogoDel').addEventListener('click',()=>{ pendingLogo=null; $('sLogoPrev').hidden=true; });
-  $('setSave').addEventListener('click',()=>{ cfg.title=$('sTitle').value.trim()||'Jegyellenőrzés'; cfg.sub=$('sSub').value.trim(); cfg.welcome=$('sWelcome').value.trim(); cfg.deny=$('sDeny').value.trim(); cfg.id=$('sId').value.trim()||'#0001'; cfg.cap=$('sCap').value.trim()||'Olvassa be a belépőjegy kódját'; cfg.term=$('sTerm').value.trim()||'T-0412'; cfg.logo=pendingLogo||''; cfg.icon=pendingIcon||'';
+  $('setSave').addEventListener('click',()=>{ cfg.title=$('sTitle').value.trim()||'Jegyellenőrzés'; cfg.sub=$('sSub').value.trim(); cfg.welcome=$('sWelcome').value.trim(); cfg.deny=$('sDeny').value.trim(); cfg.id=$('sId').value.trim()||'#0001'; cfg.cap=$('sCap').value.trim()||'Olvassa be a belépőjegy kódját'; cfg.term=$('sTerm').value.trim()||'T-0412'; cfg.spTitle=$('sSpTitle').value.trim(); cfg.spSub=$('sSpSub').value.trim(); cfg.spSec=parseFloat(String($('sSpSec').value).replace(',','.')); if(isNaN(cfg.spSec)) cfg.spSec=2; cfg.logo=pendingLogo||''; cfg.icon=pendingIcon||'';
     store.set('cfg',cfg); drawHeader(); applyIcon(); closeSheets(); });
 
   /* boss settings: every text editable, PIN protected */
   $('bossOpen').addEventListener('click',()=>{ if($('pinInput').value.trim()!==(cfg.pin||'0000')){ $('pinMsg').textContent='Hibás PIN-kód.'; return; } $('pinMsg').textContent=''; $('pinInput').value='';
     const F=$('bossFields'); F.innerHTML='';
     for(const k in TX){ const l=document.createElement('label'); l.textContent=TX[k][0]; const i=document.createElement('input'); i.id='tx_'+k; i.placeholder=TX[k][1]; i.value=(cfg.tx&&cfg.tx[k])||''; l.appendChild(i); F.appendChild(l); }
+    const C=$('bossColors'); C.innerHTML='';
+    for(const k in COL){ const d=document.createElement('div'); d.className='colrow'; const i=document.createElement('input'); i.type='color'; i.id='col_'+k; i.value=(cfg.colors&&cfg.colors[k])||COL[k][1]; d.append(i,document.createTextNode(COL[k][0])); C.appendChild(d); }
     $('newPin').value=''; openSheet('bossBox'); });
-  $('bossSave').addEventListener('click',()=>{ const o={}; for(const k in TX){ const v=$('tx_'+k).value.trim(); if(v) o[k]=v; } cfg.tx=o; const np=$('newPin').value.trim(); if(np) cfg.pin=np; store.set('cfg',cfg); drawHeader(); renderRows(); closeSheets(); });
+  $('colorReset').addEventListener('click',()=>{ for(const k in COL) $('col_'+k).value=COL[k][1]; });
+  $('bossSave').addEventListener('click',()=>{ const o={}; for(const k in TX){ const v=$('tx_'+k).value.trim(); if(v) o[k]=v; } cfg.tx=o; const c={}; for(const k in COL){ const v=$('col_'+k).value; if(v&&v.toLowerCase()!==COL[k][1]) c[k]=v; } cfg.colors=c; const np=$('newPin').value.trim(); if(np) cfg.pin=np; store.set('cfg',cfg); drawHeader(); applyColors(); renderRows(); closeSheets(); });
   $('bossReset').addEventListener('click',()=>{ for(const k in TX) $('tx_'+k).value=''; });
   sheets.push('bossBox');
 
