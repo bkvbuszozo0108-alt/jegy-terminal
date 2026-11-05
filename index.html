@@ -130,7 +130,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       <div class="cap" id="cap">Olvassa be a belépőjegy kódját</div>
     </div>
     <div class="list">
-      <div class="hd"><span>Ellenőrzési napló</span><button type="button" id="manualBtn">Kézi bevitel</button></div>
+      <div class="hd"><span data-t="listHd">Ellenőrzési napló</span><button type="button" id="manualBtn" data-t="manualBtn">Kézi bevitel</button></div>
       <div id="rows"></div>
     </div>
     <div class="foot"><span id="footTerm">JEGYELLENŐR TERMINÁL · T-0412</span><span id="footId"></span><span id="footCount"></span></div>
@@ -148,27 +148,27 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   <div class="scrim" id="scrim" hidden></div>
 
   <div class="sheet" id="manualBox" hidden>
-    <h2>Kézi bevitel</h2>
-    <label>Jegy kódja / sorszáma<input id="manualInput" autocomplete="off" placeholder="pl. PARTY-0042"></label>
-    <div class="btns"><button type="button" data-close>Mégse</button><button type="button" class="primary" id="manualOk">Ellenőriz</button></div>
+    <h2 data-t="manualTitle">Kézi bevitel</h2>
+    <label><span data-t="manualLabel">Jegy kódja / sorszáma</span><input id="manualInput" autocomplete="off" placeholder="pl. PARTY-0042"></label>
+    <div class="btns"><button type="button" data-close data-t="cancel">Mégse</button><button type="button" class="primary" id="manualOk" data-t="manualOk">Ellenőriz</button></div>
   </div>
 
   <div class="sheet" id="logBox" hidden>
-    <h2>Napló</h2>
-    <label>Új bejegyzés<textarea id="noteText" rows="2" placeholder="Rövid megjegyzés (pl. ajándékjegy, VIP, probléma)…"></textarea></label>
-    <div class="btns"><button type="button" data-close>Bezár</button><button type="button" class="primary" id="noteSave">Rögzítés</button></div>
+    <h2 data-t="logTitle">Napló</h2>
+    <label><span data-t="noteLabel">Új bejegyzés</span><textarea id="noteText" rows="2" placeholder="Rövid megjegyzés (pl. ajándékjegy, VIP, probléma)…"></textarea></label>
+    <div class="btns"><button type="button" data-close data-t="close">Bezár</button><button type="button" class="primary" id="noteSave" data-t="noteSave">Rögzítés</button></div>
     <div class="log" id="noteLog"></div>
     <div class="sys">
-      <div class="syshd">Rendszer</div>
-      <div class="sysrow"><span>Alkalmazás</span><span>Belépőjegy terminál v2.4.1</span></div>
-      <div class="sysrow"><span>Terminál</span><span id="sysTerm">T-0412</span></div>
-      <div class="sysrow"><span>Jegyellenőr</span><span id="sysId"></span></div>
-      <div class="sysrow"><span>Szolgálat kezdete</span><span id="sysStart"></span></div>
-      <div class="sysrow"><span>Beengedve / elutasítva</span><span id="sysCount"></span></div>
+      <div class="syshd" data-t="sysHd">Rendszer</div>
+      <div class="sysrow"><span data-t="sysApp">Alkalmazás</span><span data-t="sysAppVal">Belépőjegy terminál v2.4.1</span></div>
+      <div class="sysrow"><span data-t="sysTermL">Terminál</span><span id="sysTerm">T-0412</span></div>
+      <div class="sysrow"><span data-t="sysInsp">Jegyellenőr</span><span id="sysId"></span></div>
+      <div class="sysrow"><span data-t="sysStartL">Szolgálat kezdete</span><span id="sysStart"></span></div>
+      <div class="sysrow"><span data-t="sysCountL">Beengedve / elutasítva</span><span id="sysCount"></span></div>
     </div>
-    <div class="btns"><button type="button" class="primary" id="instBtn">⤓ Telepítés a kezdőképernyőre</button><a class="btn-link" id="instPage" href="telepites.html" hidden>Telepítő oldal / QR</a><button type="button" id="dlBtn">Fájl mentése</button></div>
+    <div class="btns"><button type="button" class="primary" id="instBtn" data-t="instBtn">⤓ Telepítés a kezdőképernyőre</button><a class="btn-link" id="instPage" href="telepites.html" hidden>Telepítő oldal / QR</a><button type="button" id="dlBtn">Fájl mentése</button></div>
     <div class="dlhint" id="dlHint">A letöltött <b>belepojegy-terminal.html</b> fájlt Chrome-ban megnyitva: ⋮ menü → „Hozzáadás a kezdőképernyőhöz” – saját ikonnal, teljes képernyőn fut.</div>
-    <div class="btns"><button type="button" id="clearBtn">Beolvasások és napló törlése</button></div>
+    <div class="btns"><button type="button" id="clearBtn" data-t="clearBtn">Beolvasások és napló törlése</button></div>
   </div>
 
   <div class="sheet" id="setBox" hidden>
@@ -184,16 +184,30 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <label>Jegyellenőr azonosító<input id="sId"></label>
     <label>Terminál azonosító<input id="sTerm" placeholder="T-0412"></label>
     <div class="btns"><button type="button" data-close>Mégse</button><button type="button" class="primary" id="setSave">Mentés</button></div>
+    <div class="sys" style="margin-top:6px">
+      <div class="syshd">Főnöki beállítások</div>
+      <div class="dlhint">Minden felirat, gombszöveg és üzenet átírható. PIN-kóddal védett (alap: 0000).</div>
+      <div class="btns" style="margin-top:8px"><input id="pinInput" inputmode="numeric" placeholder="PIN" style="flex:1 1 80px;font:inherit;border:1px solid var(--line);border-radius:8px;padding:10px"><button type="button" class="primary" id="bossOpen" style="flex:2 1 120px">Szövegek szerkesztése</button></div>
+      <div class="dlhint" id="pinMsg"></div>
+    </div>
+  </div>
+
+  <div class="sheet" id="bossBox" hidden>
+    <h2>Főnöki beállítások – szövegek</h2>
+    <div class="dlhint">Üresen hagyott mező = alapértelmezett szöveg. A módosítások mentés után azonnal érvényesek.</div>
+    <div id="bossFields" style="display:flex;flex-direction:column;gap:8px"></div>
+    <label>Új PIN-kód (üres = marad)<input id="newPin" inputmode="numeric" maxlength="8"></label>
+    <div class="btns"><button type="button" data-close>Mégse</button><button type="button" id="bossReset">Alapértelmezett szövegek</button><button type="button" class="primary" id="bossSave">Mentés</button></div>
   </div>
 
   <div class="result" id="result" hidden>
-    <div class="appbar pad"><button class="ic" id="rBack" type="button" title="Vissza">←</button><h1>Ellenőrzés eredménye</h1></div>
+    <div class="appbar pad"><button class="ic" id="rBack" type="button" title="Vissza">←</button><h1 data-t="resTitle">Ellenőrzés eredménye</h1></div>
     <div class="tripbar pad"><b id="rCode"></b><br><span id="rTrip"></span></div>
     <div class="txn pad"><span id="rTxn"></span><span id="rInsp"></span></div>
     <div class="body pad">
       <img class="rlogo" id="rLogo" alt="" hidden>
       <div class="vicon" id="rIcon">✓</div>
-      <div class="lab">Érvényesség:</div>
+      <div class="lab" data-t="validityLabel">Érvényesség:</div>
       <div class="verdict" id="rVerdict">ÉRVÉNYES</div>
       <div class="why" id="rWhy"></div>
       <div class="card" id="rCard"></div>
@@ -224,14 +238,32 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       icons:[{src:ico,sizes:png?'192x192':'192x192 512x512',type:png?'image/png':'image/svg+xml',purpose:'any'}]};
     $('mfLink').href='data:application/manifest+json;base64,'+b64u(JSON.stringify(man));
   }
-  const cfg=Object.assign({title:'Jegyellenőrzés',sub:'Beléptetési pont · Főbejárat',welcome:'Belépés engedélyezve. Jó szórakozást!',deny:'Belépés megtagadva',id:'E-0001',logo:'',cap:'Olvassa be a belépőjegy kódját',term:'T-0412',icon:''},window.__PRESET||{},store.get('cfg',{}));
+  const TX={
+    listHd:['Lista címe','Ellenőrzési napló'], manualBtn:['Kézi bevitel gomb','Kézi bevitel'], footTerm:['Lábléc: terminál felirat','JEGYELLENŐR TERMINÁL'], footInsp:['Lábléc: ellenőr felirat','Jegyellenőr'], footCount:['Lábléc: számláló','Beengedve:'],
+    emptyList:['Üres lista szövege','Még nincs beolvasás. Tartsa a jegy kódját a keretbe.'],
+    manualTitle:['Kézi bevitel – cím','Kézi bevitel'], manualLabel:['Kézi bevitel – mező','Jegy kódja / sorszáma'], manualOk:['Kézi bevitel – gomb','Ellenőriz'], cancel:['Mégse gomb','Mégse'], close:['Bezár gomb','Bezár'],
+    logTitle:['Napló – cím','Napló'], noteLabel:['Napló – új bejegyzés','Új bejegyzés'], noteSave:['Napló – rögzítés gomb','Rögzítés'], clearBtn:['Törlés gomb','Beolvasások és napló törlése'], instBtn:['Telepítés gomb','⤓ Telepítés a kezdőképernyőre'],
+    sysHd:['Rendszer panel – cím','Rendszer'], sysApp:['Rendszer – alkalmazás','Alkalmazás'], sysAppVal:['Rendszer – alkalmazás neve/verzió','Belépőjegy terminál v2.4.1'], sysTermL:['Rendszer – terminál','Terminál'], sysInsp:['Rendszer – ellenőr','Jegyellenőr'], sysStartL:['Rendszer – szolgálat kezdete','Szolgálat kezdete'], sysCountL:['Rendszer – számláló','Beengedve / elutasítva'],
+    resTitle:['Eredmény – fejléc','Ellenőrzés eredménye'], codeLabel:['Eredmény – jegykód felirat','Jegykód:'], txn:['Eredmény – tranzakció felirat','Tranzakció'], validityLabel:['Eredmény – érvényesség felirat','Érvényesség:'],
+    vValid:['Ítélet: érvényes','ÉRVÉNYES'], vInvalid:['Ítélet: érvénytelen','ÉRVÉNYTELEN'], vExpired:['Ítélet: lejárt','LEJÁRT'], vUsed:['Ítélet: már felhasznált','MÁR FELHASZNÁLT'],
+    whyFlag:['Indok: érvénytelenként jelölt','A jegy érvénytelenként van megjelölve'], whyNotYet:['Indok: még nem érvényes','A jegy még nem érvényes'], whyExpired:['Indok: lejárt (dátum elé)','A jegy érvényessége lejárt:'], whyUsed:['Indok: felhasznált (idő elé)','Ezzel a jeggyel már beléptek:'],
+    cGuest:['Adatlap: vendég','Vendég'], cType:['Adatlap: jegytípus','Jegytípus'], cCode:['Adatlap: sorszám','Jegy sorszáma'], cFrom:['Adatlap: érvényes ettől','Érvényes ettől'], cTo:['Adatlap: érvényes eddig','Érvényes eddig'], cChecked:['Adatlap: ellenőrizve','Ellenőrizve'], cPoint:['Adatlap: beléptetési pont','Beléptetési pont'],
+    btnAdmit:['Gomb: beléptetés','Beléptetés · következő vendég'], btnReject:['Gomb: elutasítás','Elutasítás · következő vendég'], btnOverride:['Gomb: mégis beengedés','Mégis beengedem'],
+    chipOk:['Lista jelzés: érvényes','ÉRVÉNYES'], chipBad:['Lista jelzés: érvénytelen','ÉRVÉNYTELEN'], chipLet:['Lista jelzés: kézi beléptetés','KÉZI BELÉPTETÉS'],
+    defName:['Ismeretlen vendég neve','Vendég'], defType:['Alap jegytípus','Belépőjegy'],
+    camStart:['Kamera: indítás','Kamera indítása…'], camStopped:['Kamera: leállítva','Kamera leállítva.'], camNoPerm:['Kamera: nincs engedély','Nincs kameraengedély. Chrome: a címsor lakat ikonja → Engedélyek → Kamera: engedélyez, majd frissíts. Vagy használd a ➜ gombot.'], camFail:['Kamera: hiba','A kamera nem indult el. Használd a ➜ gombot.'], noCode:['Nincs kód a képen','Nem található kód a képen'] };
+  const tx=k=>(cfg.tx&&cfg.tx[k])||TX[k][1];
+  function applyTexts(){ document.querySelectorAll('[data-t]').forEach(el=>{ el.textContent=tx(el.getAttribute('data-t')); }); }
+  const cfg=Object.assign({title:'Jegyellenőrzés',sub:'Beléptetési pont · Főbejárat',welcome:'Belépés engedélyezve. Jó szórakozást!',deny:'Belépés megtagadva',id:'E-0001',logo:'',cap:'Olvassa be a belépőjegy kódját',term:'T-0412',icon:'',pin:'0000',tx:{}},window.__PRESET||{},store.get('cfg',{}));
 
   function drawHeader(){
     $('title').textContent=cfg.title||'Jegyellenőrzés';
     const t=$('tripbar'); t.textContent=''; const b=document.createElement('b'); b.textContent=cfg.sub||''; t.append(b);
     const has=!!cfg.logo; $('logo').hidden=!has; $('rLogo').hidden=!has; if(has){ $('logo').src=cfg.logo; $('rLogo').src=cfg.logo; }
-    $('sysId').textContent=cfg.id; $('footId').textContent='Jegyellenőr '+cfg.id; $('cap').textContent=cfg.cap||'Olvassa be a belépőjegy kódját';
-    $('sysTerm').textContent=cfg.term; $('footTerm').textContent='JEGYELLENŐR TERMINÁL · '+cfg.term;
+    applyTexts();
+    $('sysId').textContent=cfg.id; $('footId').textContent=tx('footInsp')+' '+cfg.id; $('cap').textContent=cfg.cap||'Olvassa be a belépőjegy kódját';
+    $('sysTerm').textContent=cfg.term; $('footTerm').textContent=tx('footTerm')+' · '+cfg.term;
+    $('camMsg').textContent=$('camMsg').textContent==='Kamera indítása…'?tx('camStart'):$('camMsg').textContent;
   }
   const shiftStart=(()=>{ let v=store.get('shift',null); if(!v){ v=Date.now(); store.set('shift',v); } return new Date(v); })();
   $('sysStart').textContent=fmtFull(shiftStart);
@@ -291,7 +323,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     const d=new Date(s); return isNaN(d)?null:d; }
   function shortCode(s){ s=String(s); return s.length>24?s.slice(0,24)+'…':s; }
   function parseTicket(text){
-    const t={name:'Vendég',type:'Belépőjegy',start:null,end:null,code:text,flag:null};
+    const t={name:tx('defName'),type:tx('defType'),start:null,end:null,code:text,flag:null};
     try{ const j=JSON.parse(text); if(j&&typeof j==='object'){
       t.name=j.nev||j.vendeg||j.name||t.name; t.type=j.tipus||j.jegy||j.type||t.type;
       t.start=parseDate(j.kezdet||j.kezdete||j.start); t.end=parseDate(j.lejarat||j.vege||j.expiry||j.exp);
@@ -307,27 +339,27 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   }
   function validate(t){
     const used=store.get('used',{}), now=new Date();
-    if(t.flag==='invalid') return {ok:false,verdict:'ÉRVÉNYTELEN',why:'A jegy érvénytelenként van megjelölve'};
-    if(t.start&&t.start>now) return {ok:false,verdict:'ÉRVÉNYTELEN',why:'A jegy még nem érvényes'};
-    if(t.end&&t.end<now) return {ok:false,verdict:'LEJÁRT',why:'A jegy érvényessége lejárt: '+fmtFull(t.end)};
-    if(t.flag==='used'||used[t.code]) return {ok:false,verdict:'MÁR FELHASZNÁLT',why:'Ezzel a jeggyel már beléptek: '+used[t.code]};
+    if(t.flag==='invalid') return {ok:false,kind:'invalid',verdict:tx('vInvalid'),why:tx('whyFlag')};
+    if(t.start&&t.start>now) return {ok:false,kind:'invalid',verdict:tx('vInvalid'),why:tx('whyNotYet')};
+    if(t.end&&t.end<now) return {ok:false,kind:'expired',verdict:tx('vExpired'),why:tx('whyExpired')+' '+fmtFull(t.end)};
+    if(t.flag==='used'||used[t.code]) return {ok:false,kind:'used',verdict:tx('vUsed'),why:tx('whyUsed')+' '+(used[t.code]||'')};
     used[t.code]=fmtFull(now); store.set('used',used);
-    return {ok:true,verdict:'ÉRVÉNYES',why:cfg.welcome||''};
+    return {ok:true,kind:'ok',verdict:tx('vValid'),why:cfg.welcome||''};
   }
 
   /* history list */
   let hist=store.get('hist',[]);
-  function counts(){ const inn=hist.filter(h=>h.ok||h.let).length, out=hist.length-inn; $('footCount').textContent='Beengedve: '+inn; $('sysCount').textContent=inn+' / '+out; }
+  function counts(){ const inn=hist.filter(h=>h.ok||h.let).length, out=hist.length-inn; $('footCount').textContent=tx('footCount')+' '+inn; $('sysCount').textContent=inn+' / '+out; }
   function renderRows(){
     const box=$('rows'); box.innerHTML='';
-    if(!hist.length){ box.innerHTML='<div class="empty">Még nincs beolvasás. Tartsa a jegy kódját a keretbe.</div>'; }
+    if(!hist.length){ const e=document.createElement('div'); e.className='empty'; e.textContent=tx('emptyList'); box.appendChild(e); }
     for(const h of hist.slice(0,25)){
       const r=document.createElement('div'); r.className='row'+(h.ok||h.let?'':' bad');
       const l=document.createElement('div'); l.style.minWidth='0';
       const n=document.createElement('div'); n.className='n'; n.textContent=h.name;
       const s=document.createElement('div'); s.className='s'; s.textContent=h.type+' · '+h.time;
       l.append(n,s);
-      const c=document.createElement('span'); c.className='chip'; c.textContent=h.ok?'ÉRVÉNYES':(h.let?'KÉZI BELÉPTETÉS':'ÉRVÉNYTELEN');
+      const c=document.createElement('span'); c.className='chip'; c.textContent=h.ok?tx('chipOk'):(h.let?tx('chipLet'):tx('chipBad'));
       r.append(l,c); box.appendChild(r);
     }
     counts();
@@ -341,14 +373,14 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     current={t,v};
     const R=$('result'); R.className='result'+(v.ok?'':' bad'); R.hidden=false;
     const txn=(store.get('txn',0)||0)+1; store.set('txn',txn);
-    $('rTxn').textContent='Tranzakció '+now.getFullYear()+pad(now.getMonth()+1)+pad(now.getDate())+'-'+String(txn).padStart(5,'0');
-    $('rInsp').textContent='Jegyellenőr '+cfg.id+' · '+cfg.term;
-    $('rCode').textContent='Jegykód: '+shortCode(t.code); $('rTrip').textContent=cfg.title+(cfg.sub?' · '+cfg.sub:'');
-    $('rVerdict').textContent=v.verdict; $('rIcon').textContent=v.ok?'✓':(v.verdict==='MÁR FELHASZNÁLT'?'!':'✕'); $('rWhy').textContent=v.ok?v.why:(v.why+(cfg.deny?' · '+cfg.deny:''));
+    $('rTxn').textContent=tx('txn')+' '+now.getFullYear()+pad(now.getMonth()+1)+pad(now.getDate())+'-'+String(txn).padStart(5,'0');
+    $('rInsp').textContent=tx('footInsp')+' '+cfg.id+' · '+cfg.term;
+    $('rCode').textContent=tx('codeLabel')+' '+shortCode(t.code); $('rTrip').textContent=cfg.title+(cfg.sub?' · '+cfg.sub:'');
+    $('rVerdict').textContent=v.verdict; $('rIcon').textContent=v.ok?'✓':(v.kind==='used'?'!':'✕'); $('rWhy').textContent=v.ok?v.why:(v.why+(cfg.deny?' · '+cfg.deny:''));
     const card=$('rCard'); card.innerHTML='';
-    const rows=[['Vendég',t.name],['Jegytípus',t.type],['Jegy sorszáma',shortCode(t.code)],['Érvényes ettől',t.start?fmtFull(t.start):'—'],['Érvényes eddig',t.end?fmtFull(t.end):'—'],['Ellenőrizve',fmtFullS(now)],['Beléptetési pont',cfg.sub||'—']];
+    const rows=[[tx('cGuest'),t.name],[tx('cType'),t.type],[tx('cCode'),shortCode(t.code)],[tx('cFrom'),t.start?fmtFull(t.start):'—'],[tx('cTo'),t.end?fmtFull(t.end):'—'],[tx('cChecked'),fmtFullS(now)],[tx('cPoint'),cfg.sub||'—']];
     for(const [k,val] of rows){ const d=document.createElement('div'),a=document.createElement('span'),b=document.createElement('span'); a.textContent=k; b.textContent=val; d.append(a,b); card.appendChild(d); }
-    $('rMain').textContent=v.ok?'Beléptetés · következő vendég':'Elutasítás · következő vendég';
+    $('rMain').textContent=v.ok?tx('btnAdmit'):tx('btnReject'); $('rSec').textContent=tx('btnOverride');
     $('rSec').hidden=v.ok;
     hist.unshift({name:t.name,type:t.type,time:fmtHM(now),ok:v.ok,let:false,code:t.code}); store.set('hist',hist); renderRows();
     try{ navigator.vibrate&&navigator.vibrate(v.ok?[80]:[120,80,120]); }catch(e){}
@@ -372,11 +404,11 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   async function startCamera(){
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ camFail('Ebben a nézetben nincs élő kamera. A ➜ gomb a telefon kameráját nyitja meg.'); return; }
     try{ stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}}); }
-    catch(e){ camFail(e&&e.name==='NotAllowedError'?'Nincs kameraengedély. Chrome: a címsor lakat ikonja → Engedélyek → Kamera: engedélyez, majd frissíts. Vagy használd a ➜ gombot.':'A kamera nem indult el ('+(e.name||'hiba')+'). Használd a ➜ gombot.'); return; }
+    catch(e){ camFail(e&&e.name==='NotAllowedError'?tx('camNoPerm'):tx('camFail')+' ('+(e.name||'hiba')+')'); return; }
     still.hidden=true; video.hidden=false; camMsg.hidden=true; frame.hidden=false; video.srcObject=stream; await video.play().catch(()=>{});
     running=true; $('navScan').classList.add('active'); loop();
   }
-  function stopCamera(){ running=false; if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; } video.hidden=true; frame.hidden=true; camMsg.hidden=false; camMsg.textContent='Kamera leállítva.'; $('navScan').classList.remove('active'); }
+  function stopCamera(){ running=false; if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; } video.hidden=true; frame.hidden=true; camMsg.hidden=false; camMsg.textContent=tx('camStopped'); $('navScan').classList.remove('active'); }
   function camFail(m){ camMsg.hidden=false; camMsg.textContent=m; video.hidden=true; frame.hidden=true; }
   async function loop(){
     if(!running) return;
@@ -393,7 +425,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   $('file').addEventListener('change',()=>{ const f=$('file').files&&$('file').files[0]; if(!f) return; const url=URL.createObjectURL(f); const img=new Image();
     img.onload=async()=>{ if(running) stopCamera(); still.src=url; still.hidden=false; camMsg.hidden=true; let found=null;
       for(const s of [1200,800,1800]){ const sc=Math.min(1,s/Math.max(img.width,img.height)); work.width=Math.round(img.width*sc); work.height=Math.round(img.height*sc); wctx.drawImage(img,0,0,work.width,work.height); found=await decodeCanvas(work); if(found) break; }
-      if(found) showResult(found); else { $('cap').textContent='Nem található kód a képen'; setTimeout(()=>{$('cap').textContent=cfg.cap},2500); }
+      if(found) showResult(found); else { $('cap').textContent=tx('noCode'); setTimeout(()=>{$('cap').textContent=cfg.cap},2500); }
       $('file').value=''; };
     img.src=url; });
 
@@ -430,6 +462,15 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   $('sLogoDel').addEventListener('click',()=>{ pendingLogo=null; $('sLogoPrev').hidden=true; });
   $('setSave').addEventListener('click',()=>{ cfg.title=$('sTitle').value.trim()||'Jegyellenőrzés'; cfg.sub=$('sSub').value.trim(); cfg.welcome=$('sWelcome').value.trim(); cfg.deny=$('sDeny').value.trim(); cfg.id=$('sId').value.trim()||'#0001'; cfg.cap=$('sCap').value.trim()||'Olvassa be a belépőjegy kódját'; cfg.term=$('sTerm').value.trim()||'T-0412'; cfg.logo=pendingLogo||''; cfg.icon=pendingIcon||'';
     store.set('cfg',cfg); drawHeader(); applyIcon(); closeSheets(); });
+
+  /* boss settings: every text editable, PIN protected */
+  $('bossOpen').addEventListener('click',()=>{ if($('pinInput').value.trim()!==(cfg.pin||'0000')){ $('pinMsg').textContent='Hibás PIN-kód.'; return; } $('pinMsg').textContent=''; $('pinInput').value='';
+    const F=$('bossFields'); F.innerHTML='';
+    for(const k in TX){ const l=document.createElement('label'); l.textContent=TX[k][0]; const i=document.createElement('input'); i.id='tx_'+k; i.placeholder=TX[k][1]; i.value=(cfg.tx&&cfg.tx[k])||''; l.appendChild(i); F.appendChild(l); }
+    $('newPin').value=''; openSheet('bossBox'); });
+  $('bossSave').addEventListener('click',()=>{ const o={}; for(const k in TX){ const v=$('tx_'+k).value.trim(); if(v) o[k]=v; } cfg.tx=o; const np=$('newPin').value.trim(); if(np) cfg.pin=np; store.set('cfg',cfg); drawHeader(); renderRows(); closeSheets(); });
+  $('bossReset').addEventListener('click',()=>{ for(const k in TX) $('tx_'+k).value=''; });
+  sheets.push('bossBox');
 
   setupDecoder().then(startCamera);
 })();
