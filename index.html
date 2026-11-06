@@ -386,9 +386,9 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   let native=null, zx=null;
   async function setupDecoder(){
     try{ if('BarcodeDetector' in window){ const f=await BarcodeDetector.getSupportedFormats();
-      if(f.includes('qr_code')) native=new BarcodeDetector({formats:['qr_code','data_matrix','code_128','ean_13','pdf417','aztec'].filter(x=>f.includes(x))}); } }catch(e){}
+      if(f.includes('qr_code')) native=new BarcodeDetector({formats:['qr_code','data_matrix','code_128','code_39','code_93','ean_13','ean_8','upc_a','upc_e','itf','codabar','pdf417','aztec'].filter(x=>f.includes(x))}); } }catch(e){}
     if(!native && window.ZXing){ const hints=new Map();
-      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.QR_CODE,ZXing.BarcodeFormat.DATA_MATRIX,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.PDF_417,ZXing.BarcodeFormat.AZTEC]);
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,['QR_CODE','DATA_MATRIX','CODE_128','CODE_39','CODE_93','EAN_13','EAN_8','UPC_A','UPC_E','ITF','CODABAR','PDF_417','AZTEC'].map(k=>ZXing.BarcodeFormat[k]).filter(v=>v!==undefined));
       hints.set(ZXing.DecodeHintType.TRY_HARDER,true); zx=new ZXing.BrowserMultiFormatReader(hints); }
   }
   const work=document.createElement('canvas'), wctx=work.getContext('2d',{willReadFrequently:true});
@@ -455,7 +455,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     kv('kvCheck',[[tx('kMode'),t.passMode?tx('modeBerlet'):tx('modeJegy')],[tx('kChecked'),fmtFullS(now)],[tx('kPlace'),cfg.sub],[tx('kDevice'),cfg.term],[tx('kInsp'),cfg.id],v.ok?[tx('kTxn'),txnS]:[tx('kFine'),ftFine(cfg.fine)]]);
     $('rMain').textContent=v.ok?tx('btnNext'):tx('btnFine'); $('rSec').textContent=tx('btnOverride'); $('rSec').hidden=v.ok;
     hist.unshift({name:t.name,type:t.type,time:fmtHM(now),ok:v.ok,let:false,fine:false,code:t.code,verdict:v.verdict}); store.set('hist',hist); renderRows();
-    try{ navigator.vibrate&&navigator.vibrate(v.ok?[80]:[120,80,120]); }catch(e){}
+    try{ navigator.vibrate&&navigator.vibrate(v.ok?40:[60,60,60]); }catch(e){}
     beep(v.ok);
   }
   function closeResult(){ document.querySelector('.app').className='app'; $('res').hidden=true; $('idle').hidden=false; $('codeInput').value=''; last=''; if(!running) startCamera(); }
@@ -468,9 +468,10 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   function unlockAudio(){ try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)(); if(actx.state==='suspended') actx.resume(); }catch(e){} }
   addEventListener('pointerdown',unlockAudio,{passive:true}); addEventListener('keydown',unlockAudio);
   function scanBlip(){ try{ unlockAudio(); const o=actx.createOscillator(),g=actx.createGain(); o.type='sine'; o.frequency.value=2200; g.gain.value=.05; o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime+.05); }catch(e){} }
-  function beep(ok){ try{ unlockAudio(); const t0=actx.currentTime;
-    const tone=(f,s,d)=>{ const o=actx.createOscillator(),g=actx.createGain(); o.type='square'; o.frequency.value=f; g.gain.value=.06; o.connect(g); g.connect(actx.destination); o.start(t0+s); o.stop(t0+s+d); };
-    if(ok){ tone(1320,0,.09); tone(1760,.1,.14); } else { tone(440,0,.18); tone(330,.2,.28); } }catch(e){} }
+  function beep(ok){ try{ unlockAudio(); const t0=actx.currentTime, d=.07;
+    const o=actx.createOscillator(),g=actx.createGain(); o.type='sine'; o.frequency.value=ok?2400:1100;
+    g.gain.setValueAtTime(0,t0); g.gain.linearRampToValueAtTime(.12,t0+.005); g.gain.setValueAtTime(.12,t0+d-.015); g.gain.linearRampToValueAtTime(0,t0+d);
+    o.connect(g); g.connect(actx.destination); o.start(t0); o.stop(t0+d+.01); }catch(e){} }
 
   /* camera */
   const video=$('video'), still=$('still'), camMsg=$('camMsg'), frame=$('frame');
@@ -502,7 +503,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     if(!busy && video.videoWidth){
       busy=true;
       try{ const w=Math.min(video.videoWidth,960), h=Math.round(video.videoHeight*w/video.videoWidth); work.width=w; work.height=h; wctx.drawImage(video,0,0,w,h);
-        const txt=await decodeCanvas(work); if(txt){ const now=Date.now(); if(!(txt===last&&now-lastAt<3000)){ last=txt; lastAt=now; scanBlip(); showResult(txt); } } }catch(e){}
+        const txt=await decodeCanvas(work); if(txt){ const now=Date.now(); if(!(txt===last&&now-lastAt<3000)){ last=txt; lastAt=now; showResult(txt); } } }catch(e){}
       busy=false;
     }
     setTimeout(loop,120);
