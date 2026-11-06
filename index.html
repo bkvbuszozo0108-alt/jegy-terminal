@@ -73,7 +73,7 @@ body{margin:0;background:var(--status);color:var(--fg);font-family:var(--font);o
 .modesw button{font:inherit;font-weight:700;font-size:1rem;letter-spacing:.06em;text-transform:uppercase;padding:11px;border:0;background:transparent;color:var(--bar);cursor:pointer}
 .modesw button.on{background:var(--bar);color:#fff}
 .modesw button:focus-visible{outline:3px solid var(--frame);outline-offset:-3px}
-.modehint{margin-top:6px;font-size:.82rem;color:var(--muted)}
+.modehint{margin-top:2px;font-size:.85rem;font-weight:700;color:var(--bar);border:1.5px solid var(--bar);border-radius:8px;padding:8px 10px}
 .sec{font-size:.78rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:14px 0 4px}
 .app.ok .sec,.app.bad .sec{color:rgba(0,0,0,.55)}
 .kv div{display:grid;grid-template-columns:minmax(9ch,38%) 1fr;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:1.05rem;align-items:baseline}
@@ -90,6 +90,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 
 /* sheets */
 .sheet{position:absolute;left:0;right:0;bottom:0;z-index:8;background:var(--card);border-radius:10px 10px 0 0;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px;max-height:85%;overflow:auto;box-shadow:0 -6px 24px rgba(0,0,0,.25)}
+.sheet>*{flex-shrink:0}
 .sheet h2{margin:0;font-size:1.05rem}
 .sheet label{font-size:.8rem;color:var(--muted);display:flex;flex-direction:column;gap:4px}
 .sheet input,.sheet textarea{font:inherit;width:100%;border:1px solid var(--line);border-radius:4px;padding:10px;background:#fff;color:var(--fg)}
@@ -151,10 +152,6 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
         <span class="bt"><span class="rname" id="rName"></span><span class="scanstate" id="scanstate"><span class="dot"></span><span id="scanState" data-t="scanReady">SZKENNER AKTÍV</span></span></span>
       </button>
       <div class="scanerr" id="scanErr" hidden></div>
-      <div class="modesw" role="group" aria-label="Szkennelési mód">
-        <button type="button" id="modeJegy" class="on" data-t="modeJegy">Jegy</button>
-        <button type="button" id="modeBerlet" data-t="modeBerlet">Bérlet</button>
-      </div>
       <div class="modehint" id="modeHint" hidden></div>
       <div class="sec" data-t="secDevice">Eszköz</div>
       <div class="kv" id="kvDevice"></div>
@@ -186,7 +183,6 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   <div class="sheet" id="menuBox" hidden>
     <h2 id="menuTitle">Menü</h2>
     <div class="btns">
-      <button type="button" id="mMode">Mód váltása (Jegy / Bérlet)</button>
       <button type="button" id="mLog">Napló / teszt / telepítés</button>
       <button type="button" id="mSet">Beállítások</button>
       <button type="button" id="mPreview">Kamera előnézet</button>
@@ -225,6 +221,12 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 
   <div class="sheet" id="setBox" hidden>
     <h2>Beállítások</h2>
+    <div class="syshd" style="margin:0">Szkennelési mód</div>
+    <div class="modesw" role="group" aria-label="Szkennelési mód">
+      <button type="button" id="modeJegy" class="on" data-t="modeJegy">Jegy</button>
+      <button type="button" id="modeBerlet" data-t="modeBerlet">Bérlet</button>
+    </div>
+    <div class="dlhint" data-t="modeBerletHint">Bérlet mód: minden beolvasott kód érvényes.</div>
     <label>Rendezvény neve (fejléc)<input id="sTitle" placeholder="Szülinapi buli 2026"></label>
     <label>Helyszín<input id="sSub" placeholder="Főbejárat"></label>
     <label>Műszak<input id="sShift" placeholder="pl. B-53QA3"></label>
@@ -538,7 +540,6 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     $('modeHint').hidden=!b; $('modeHint').textContent=tx('modeBerletHint'); if(running) setScan(true); }
   function setMode(m){ cfg.mode=m; store.set('cfg',cfg); applyMode(); }
   $('modeJegy').addEventListener('click',()=>setMode('jegy')); $('modeBerlet').addEventListener('click',()=>setMode('berlet'));
-  $('mMode').addEventListener('click',()=>{ setMode(cfg.mode==='berlet'?'jegy':'berlet'); closeSheets(); });
   applyMode();
   $('brandBtn').addEventListener('click',()=>{ $('menuTitle').textContent=cfg.title||'Menü'; openSheet('menuBox'); });
   $('mLog').addEventListener('click',openLog); $('mSet').addEventListener('click',()=>$('navSet').click());
