@@ -180,6 +180,14 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <button type="button" id="navScan" hidden>▣</button><button type="button" id="menuBtn" hidden>≡</button><button type="button" id="camBtn" hidden>▣</button>
   </div>
 
+  <div class="sheet" id="diagBox" hidden>
+    <h2>Diagnosztika</h2>
+    <div class="dlhint">Ha egy kód nem olvasható, készíts erről képernyőképet, és küldd el.</div>
+    <div class="kv" id="kvDiag"></div>
+    <label>Utolsó felismert nyers tartalom<textarea id="diagRaw" rows="3" readonly></textarea></label>
+    <div class="btns"><button type="button" id="diagRefresh">Frissítés</button><button type="button" data-close>Bezár</button></div>
+  </div>
+
   <div class="sheet" id="menuBox" hidden>
     <h2 id="menuTitle">Menü</h2>
     <div class="btns">
@@ -187,6 +195,9 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       <button type="button" id="mSet">Beállítások</button>
       <button type="button" id="mPreview">Kamera előnézet</button>
       <button type="button" id="mSwitch">Kamera váltás</button>
+      <button type="button" id="mZoom">Nagyítás: 1×</button>
+      <button type="button" id="mFocus">Élesítés</button>
+      <button type="button" id="mDiag">Diagnosztika</button>
       <label class="fb" for="file" style="display:flex;align-items:center;justify-content:center">Fotóból</label>
       <button type="button" data-close>Bezár</button>
     </div>
@@ -386,7 +397,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   let native=null, zx=null;
   async function setupDecoder(){
     try{ if('BarcodeDetector' in window){ const f=await BarcodeDetector.getSupportedFormats();
-      if(f&&f.length) native=new BarcodeDetector({formats:f.filter(x=>x!=='unknown')}); } }catch(e){}
+      diag.formats=f||[]; if(f&&f.length) native=new BarcodeDetector({formats:f.filter(x=>x!=='unknown')}); } }catch(e){ diag.nativeErr=String(e&&e.message||e); }
     if(window.ZXing){ const hints=new Map();
       hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,['QR_CODE','DATA_MATRIX','CODE_128','CODE_39','CODE_93','EAN_13','EAN_8','UPC_A','UPC_E','UPC_EAN_EXTENSION','ITF','CODABAR','RSS_14','RSS_EXPANDED','PDF_417','AZTEC','MAXICODE'].map(k=>ZXing.BarcodeFormat[k]).filter(v=>v!==undefined));
       hints.set(ZXing.DecodeHintType.TRY_HARDER,true); zx=new ZXing.BrowserMultiFormatReader(hints); }
@@ -474,13 +485,14 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   function scanBlip(){ try{ unlockAudio(); const o=actx.createOscillator(),g=actx.createGain(); o.type='sine'; o.frequency.value=2200; g.gain.value=.05; o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime+.05); }catch(e){} }
   let lastBeep=0;
   function beep(ok){ const nowMs=Date.now(); if(nowMs-lastBeep<700) return; lastBeep=nowMs; try{ unlockAudio(); const t0=actx.currentTime, d=.08;
-    const o=actx.createOscillator(),g=actx.createGain(); o.type='sine'; o.frequency.value=ok?2400:1100;
-    g.gain.setValueAtTime(0,t0); g.gain.linearRampToValueAtTime(.45,t0+.005); g.gain.setValueAtTime(.45,t0+d-.015); g.gain.linearRampToValueAtTime(0,t0+d);
+    const o=actx.createOscillator(),g=actx.createGain(); o.type='square'; o.frequency.value=ok?2700:1200;
+    g.gain.setValueAtTime(0,t0); g.gain.linearRampToValueAtTime(.9,t0+.004); g.gain.setValueAtTime(.9,t0+d-.012); g.gain.linearRampToValueAtTime(0,t0+d);
     o.connect(g); g.connect(actx.destination); o.start(t0); o.stop(t0+d+.01); }catch(e){} }
 
   /* camera */
   const video=$('video'), still=$('still'), camMsg=$('camMsg'), frame=$('frame');
-  let stream=null, running=false, busy=false, last='', lastAt=0, camId=null, cams=[], frameN=0, lockUntil=0;
+  let stream=null, running=false, busy=false, last='', lastAt=0, camId=null, cams=[], frameN=0, lockUntil=0, zoomI=0;
+  const diag={raw:'',hits:0,formats:[],nativeErr:'',zxErr:''};
   async function startCamera(){
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ camFail('Ebben a nézetben nincs élő kamera. A ➜ gomb a telefon kameráját nyitja meg.'); return; }
     if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
@@ -501,6 +513,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       if(caps.focusMode&&caps.focusMode.includes('continuous')) adv.focusMode='continuous';
       if(caps.exposureMode&&caps.exposureMode.includes('continuous')) adv.exposureMode='continuous';
       if(Object.keys(adv).length) await tr.applyConstraints({advanced:[adv]}); }catch(e){}
+    zoomI=cfg.zoomI||0; if(zoomI) applyZoom();
     running=true; $('navScan').classList.add('active'); applyPreview(); setScan(true); loop();
   }
   function setScan(on,msg){ const st=$('scanstate'); st.classList.toggle('off',!on); $('scanState').textContent=on?(cfg.mode==='berlet'?tx('scanBerlet'):tx('scanReady')):tx('scanOff'); $('scanErr').hidden=!msg; $('scanErr').textContent=msg||''; }
@@ -518,8 +531,9 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
           const max=(k===2||!native)?1600:960; const w=Math.min(video.videoWidth,max), h=Math.round(video.videoHeight*w/video.videoWidth); work.width=w; work.height=h; wctx.drawImage(video,0,0,w,h);
           const c=k===4?variant(work,1):(k===5?variant(work,2):work);
           txt=await decodeCanvas(c,k===2);
+          if(!txt&&k===2&&zx){ const bw=Math.round(w*.9), bh=Math.round(h*.5); alt.width=bw; alt.height=bh; actx2.drawImage(work,(w-bw)/2,(h-bh)/2,bw,bh,0,0,bw,bh); txt=await decodeCanvas(alt,true); }
         }
-        if(txt){ const now=Date.now(); if(now>lockUntil&&!(txt===last&&now-lastAt<3000)){ last=txt; lastAt=now; lockUntil=now+1500; showResult(txt); } } }catch(e){}
+        if(txt){ const now=Date.now(); if(now>lockUntil&&!(txt===last&&now-lastAt<3000)){ last=txt; lastAt=now; lockUntil=now+1500; diag.raw=txt; diag.hits++; showResult(txt); } } }catch(e){}
       busy=false;
     }
     setTimeout(loop,120);
@@ -560,6 +574,23 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   applyMode();
   $('brandBtn').addEventListener('click',()=>{ $('menuTitle').textContent=cfg.title||'Menü'; openSheet('menuBox'); });
   $('mLog').addEventListener('click',openLog); $('mSet').addEventListener('click',()=>$('navSet').click());
+  const ZOOMS=[1,1.5,2,3];
+  function track(){ return stream&&stream.getVideoTracks()[0]; }
+  async function applyZoom(){ const tr=track(); const caps=tr&&tr.getCapabilities?tr.getCapabilities():{}; const z=ZOOMS[zoomI];
+    if(!caps.zoom){ $('mZoom').textContent='Nagyítás: nem támogatott'; return; }
+    const v=Math.max(caps.zoom.min||1,Math.min(caps.zoom.max||1,z)); try{ await tr.applyConstraints({advanced:[{zoom:v}]}); $('mZoom').textContent='Nagyítás: '+v+'×'; cfg.zoomI=zoomI; store.set('cfg',cfg); }catch(e){ $('mZoom').textContent='Nagyítás: hiba'; } }
+  $('mZoom').addEventListener('click',()=>{ zoomI=(zoomI+1)%ZOOMS.length; applyZoom(); });
+  $('mFocus').addEventListener('click',async()=>{ const tr=track(); if(!tr) return; const caps=tr.getCapabilities?tr.getCapabilities():{}; const fm=caps.focusMode||[];
+    try{ if(fm.includes('single-shot')) await tr.applyConstraints({advanced:[{focusMode:'single-shot'}]}); if(fm.includes('continuous')) setTimeout(()=>tr.applyConstraints({advanced:[{focusMode:'continuous'}]}).catch(()=>{}),900); $('mFocus').textContent='Élesítés ✓'; }catch(e){ $('mFocus').textContent='Élesítés: nem támogatott'; }
+    setTimeout(()=>$('mFocus').textContent='Élesítés',1500); });
+  function renderDiag(){ const tr=track(); const st=tr&&tr.getSettings?tr.getSettings():{}; const caps=tr&&tr.getCapabilities?tr.getCapabilities():{};
+    kv('kvDiag',[['Beépített felismerő',native?'van':('nincs'+(diag.nativeErr?' ('+diag.nativeErr+')':''))],['Formátumok',diag.formats.length?diag.formats.join(', '):'—'],
+      ['PDF417 (beépített)',diag.formats.includes('pdf417')?'igen':'nem'],['Tartalék felismerő (ZXing)',zx?'betöltve':'nincs betöltve'],['Kamera',running?'fut':'áll'],
+      ['Felbontás',st.width?st.width+'×'+st.height:'—'],['Fókusz',(caps.focusMode||[]).join(', ')||'—'],['Nagyítás',caps.zoom?(st.zoom||1)+'× (max '+caps.zoom.max+'×)':'nem támogatott'],
+      ['Vaku',caps.torch?'van':'nincs'],['Felismerések',String(diag.hits)],['Böngésző',navigator.userAgent.replace(/.*(Chrome\/[\d.]+).*/,'$1')]]);
+    $('diagRaw').value=diag.raw||''; }
+  $('mDiag').addEventListener('click',()=>{ renderDiag(); openSheet('diagBox'); }); $('diagRefresh').addEventListener('click',renderDiag);
+  sheets.push('diagBox');
   $('mPreview').addEventListener('click',()=>{ $('camBtn').click(); closeSheets(); }); $('mSwitch').addEventListener('click',()=>{ $('navHome').click(); closeSheets(); });
   sheets.push('menuBox');
   $('noteSave').addEventListener('click',()=>{ const x=$('noteText').value.trim(); if(!x) return; const n=store.get('notes',[]); n.unshift({t:fmtFull(new Date()),x:x+' · '+cfg.id}); store.set('notes',n); $('noteText').value=''; renderNotes(); });
