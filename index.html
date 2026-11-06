@@ -386,17 +386,21 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   let native=null, zx=null;
   async function setupDecoder(){
     try{ if('BarcodeDetector' in window){ const f=await BarcodeDetector.getSupportedFormats();
-      if(f.includes('qr_code')) native=new BarcodeDetector({formats:['qr_code','data_matrix','code_128','code_39','code_93','ean_13','ean_8','upc_a','upc_e','itf','codabar','pdf417','aztec'].filter(x=>f.includes(x))}); } }catch(e){}
-    if(!native && window.ZXing){ const hints=new Map();
-      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,['QR_CODE','DATA_MATRIX','CODE_128','CODE_39','CODE_93','EAN_13','EAN_8','UPC_A','UPC_E','ITF','CODABAR','PDF_417','AZTEC'].map(k=>ZXing.BarcodeFormat[k]).filter(v=>v!==undefined));
+      if(f&&f.length) native=new BarcodeDetector({formats:f.filter(x=>x!=='unknown')}); } }catch(e){}
+    if(window.ZXing){ const hints=new Map();
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,['QR_CODE','DATA_MATRIX','CODE_128','CODE_39','CODE_93','EAN_13','EAN_8','UPC_A','UPC_E','UPC_EAN_EXTENSION','ITF','CODABAR','RSS_14','RSS_EXPANDED','PDF_417','AZTEC','MAXICODE'].map(k=>ZXing.BarcodeFormat[k]).filter(v=>v!==undefined));
       hints.set(ZXing.DecodeHintType.TRY_HARDER,true); zx=new ZXing.BrowserMultiFormatReader(hints); }
   }
   const work=document.createElement('canvas'), wctx=work.getContext('2d',{willReadFrequently:true});
-  async function decodeCanvas(c){
-    if(native){ const r=await native.detect(c); return r.length?r[0].rawValue:null; }
+  async function decodeCanvas(c,useZx){
+    if(native&&!useZx){ try{ const r=await native.detect(c); if(r.length&&r[0].rawValue) return r[0].rawValue; }catch(e){} if(!zx) return null; }
     if(zx){ try{ return zx.decodeFromCanvas(c).getText(); }catch(e){ return null; } }
     return null;
   }
+  const alt=document.createElement('canvas'), actx2=alt.getContext('2d',{willReadFrequently:true});
+  function variant(src,k){ // 1 = rotated 90°, 2 = inverted colours
+    if(k===1){ alt.width=src.height; alt.height=src.width; actx2.save(); actx2.translate(alt.width,0); actx2.rotate(Math.PI/2); actx2.drawImage(src,0,0); actx2.restore(); return alt; }
+    alt.width=src.width; alt.height=src.height; actx2.filter='invert(1)'; actx2.drawImage(src,0,0); actx2.filter='none'; return alt; }
 
   /* ticket parsing: JSON {"nev","tipus","kezdet","lejarat","kod"} | pairs NEV=;TIP=;KEZD=;LEJ=;ID= | plain text */
   function parseDate(s,startOfDay){ if(!s) return null; s=String(s).trim();
@@ -455,7 +459,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     kv('kvCheck',[[tx('kMode'),t.passMode?tx('modeBerlet'):tx('modeJegy')],[tx('kChecked'),fmtFullS(now)],[tx('kPlace'),cfg.sub],[tx('kDevice'),cfg.term],[tx('kInsp'),cfg.id],v.ok?[tx('kTxn'),txnS]:[tx('kFine'),ftFine(cfg.fine)]]);
     $('rMain').textContent=v.ok?tx('btnNext'):tx('btnFine'); $('rSec').textContent=tx('btnOverride'); $('rSec').hidden=v.ok;
     hist.unshift({name:t.name,type:t.type,time:fmtHM(now),ok:v.ok,let:false,fine:false,code:t.code,verdict:v.verdict}); store.set('hist',hist); renderRows();
-    try{ navigator.vibrate&&navigator.vibrate(v.ok?40:[60,60,60]); }catch(e){}
+    try{ navigator.vibrate&&navigator.vibrate(v.ok?40:90); }catch(e){}
     beep(v.ok);
   }
   function closeResult(){ document.querySelector('.app').className='app'; $('res').hidden=true; $('idle').hidden=false; $('codeInput').value=''; last=''; if(!running) startCamera(); }
@@ -468,14 +472,15 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   function unlockAudio(){ try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)(); if(actx.state==='suspended') actx.resume(); }catch(e){} }
   addEventListener('pointerdown',unlockAudio,{passive:true}); addEventListener('keydown',unlockAudio);
   function scanBlip(){ try{ unlockAudio(); const o=actx.createOscillator(),g=actx.createGain(); o.type='sine'; o.frequency.value=2200; g.gain.value=.05; o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime+.05); }catch(e){} }
-  function beep(ok){ try{ unlockAudio(); const t0=actx.currentTime, d=.07;
+  let lastBeep=0;
+  function beep(ok){ const nowMs=Date.now(); if(nowMs-lastBeep<700) return; lastBeep=nowMs; try{ unlockAudio(); const t0=actx.currentTime, d=.08;
     const o=actx.createOscillator(),g=actx.createGain(); o.type='sine'; o.frequency.value=ok?2400:1100;
     g.gain.setValueAtTime(0,t0); g.gain.linearRampToValueAtTime(.12,t0+.005); g.gain.setValueAtTime(.12,t0+d-.015); g.gain.linearRampToValueAtTime(0,t0+d);
     o.connect(g); g.connect(actx.destination); o.start(t0); o.stop(t0+d+.01); }catch(e){} }
 
   /* camera */
   const video=$('video'), still=$('still'), camMsg=$('camMsg'), frame=$('frame');
-  let stream=null, running=false, busy=false, last='', lastAt=0, camId=null, cams=[];
+  let stream=null, running=false, busy=false, last='', lastAt=0, camId=null, cams=[], frameN=0, lockUntil=0;
   async function startCamera(){
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ camFail('Ebben a nézetben nincs élő kamera. A ➜ gomb a telefon kameráját nyitja meg.'); return; }
     if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
@@ -503,7 +508,10 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     if(!busy && video.videoWidth){
       busy=true;
       try{ const w=Math.min(video.videoWidth,960), h=Math.round(video.videoHeight*w/video.videoWidth); work.width=w; work.height=h; wctx.drawImage(video,0,0,w,h);
-        const txt=await decodeCanvas(work); if(txt){ const now=Date.now(); if(!(txt===last&&now-lastAt<3000)){ last=txt; lastAt=now; showResult(txt); } } }catch(e){}
+        frameN++; const k=frameN%6; // cycle: native, native, zxing, native, rotated, inverted
+        const c=k===4?variant(work,1):(k===5?variant(work,2):work);
+        const txt=await decodeCanvas(c,k===2);
+        if(txt){ const now=Date.now(); if(now>lockUntil&&!(txt===last&&now-lastAt<3000)){ last=txt; lastAt=now; lockUntil=now+1500; showResult(txt); } } }catch(e){}
       busy=false;
     }
     setTimeout(loop,120);
@@ -519,7 +527,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   $('camBtn').addEventListener('click',()=>{ cfg.preview=!cfg.preview; store.set('cfg',cfg); applyPreview(); if(!running) startCamera(); });
   $('file').addEventListener('change',()=>{ const f=$('file').files&&$('file').files[0]; if(!f) return; const url=URL.createObjectURL(f); const img=new Image();
     img.onload=async()=>{ if(running) stopCamera(); still.src=url; still.hidden=false; camMsg.hidden=true; let found=null;
-      for(const s of [1200,800,1800]){ const sc=Math.min(1,s/Math.max(img.width,img.height)); work.width=Math.round(img.width*sc); work.height=Math.round(img.height*sc); wctx.drawImage(img,0,0,work.width,work.height); found=await decodeCanvas(work); if(found) break; }
+      for(const s of [1200,800,1800]){ const sc=Math.min(1,s/Math.max(img.width,img.height)); work.width=Math.round(img.width*sc); work.height=Math.round(img.height*sc); wctx.drawImage(img,0,0,work.width,work.height); found=await decodeCanvas(work)||await decodeCanvas(work,true)||await decodeCanvas(variant(work,1),true)||await decodeCanvas(variant(work,2),true); if(found) break; }
       if(found) showResult(found); else { setScan(running,tx('noCode')); setTimeout(()=>setScan(running),2500); }
       $('file').value=''; };
     img.src=url; });
