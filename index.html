@@ -69,6 +69,11 @@ body{margin:0;background:var(--status);color:var(--fg);font-family:var(--font);o
 @keyframes ping{0%{opacity:1}50%{opacity:.35}100%{opacity:1}}
 @media (prefers-reduced-motion:reduce){.scanstate .dot{animation:none}}
 .scanerr{font-size:.82rem;color:#b91c1c;line-height:1.4;margin-bottom:8px}
+.modesw{display:grid;grid-template-columns:1fr 1fr;border:2px solid var(--bar);border-radius:10px;overflow:hidden;margin-top:4px}
+.modesw button{font:inherit;font-weight:700;font-size:1rem;letter-spacing:.06em;text-transform:uppercase;padding:11px;border:0;background:transparent;color:var(--bar);cursor:pointer}
+.modesw button.on{background:var(--bar);color:#fff}
+.modesw button:focus-visible{outline:3px solid var(--frame);outline-offset:-3px}
+.modehint{margin-top:6px;font-size:.82rem;color:var(--muted)}
 .sec{font-size:.78rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:14px 0 4px}
 .app.ok .sec,.app.bad .sec{color:rgba(0,0,0,.55)}
 .kv div{display:grid;grid-template-columns:minmax(9ch,38%) 1fr;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:1.05rem;align-items:baseline}
@@ -146,6 +151,11 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
         <span class="bt"><span class="rname" id="rName"></span><span class="scanstate" id="scanstate"><span class="dot"></span><span id="scanState" data-t="scanReady">SZKENNER AKTÍV</span></span></span>
       </button>
       <div class="scanerr" id="scanErr" hidden></div>
+      <div class="modesw" role="group" aria-label="Szkennelési mód">
+        <button type="button" id="modeJegy" class="on" data-t="modeJegy">Jegy</button>
+        <button type="button" id="modeBerlet" data-t="modeBerlet">Bérlet</button>
+      </div>
+      <div class="modehint" id="modeHint" hidden></div>
       <div class="sec" data-t="secDevice">Eszköz</div>
       <div class="kv" id="kvDevice"></div>
       <div class="sec" data-t="secToday">Mai nap</div>
@@ -176,6 +186,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   <div class="sheet" id="menuBox" hidden>
     <h2 id="menuTitle">Menü</h2>
     <div class="btns">
+      <button type="button" id="mMode">Mód váltása (Jegy / Bérlet)</button>
       <button type="button" id="mLog">Napló / teszt / telepítés</button>
       <button type="button" id="mSet">Beállítások</button>
       <button type="button" id="mPreview">Kamera előnézet</button>
@@ -208,7 +219,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     </div>
     <div class="btns"><button type="button" class="primary" id="instBtn" data-t="instBtn">⤓ Telepítés a kezdőképernyőre</button><a class="btn-link" id="instPage" href="telepites.html" hidden>Telepítő oldal / QR</a><button type="button" id="dlBtn">Fájl mentése</button></div>
     <div class="dlhint" id="dlHint">A letöltött <b>belepojegy-terminal.html</b> fájlt Chrome-ban megnyitva: ⋮ menü → „Hozzáadás a kezdőképernyőhöz” – saját ikonnal, teljes képernyőn fut.</div>
-    <div class="btns"><button type="button" id="testOk">Teszt: érvényes jegy</button><button type="button" id="testBad">Teszt: lejárt jegy</button></div>
+    <div class="btns"><button type="button" id="testOk">Teszt: érvényes jegy</button><button type="button" id="testBad">Teszt: lejárt jegy</button><button type="button" id="testPass">Teszt: bérlet</button></div>
     <div class="btns"><button type="button" id="clearBtn" data-t="clearBtn">Beolvasások és napló törlése</button></div>
   </div>
 
@@ -290,6 +301,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     catch(e){ $('mfLink').href='data:application/manifest+json;base64,'+b64u(JSON.stringify(man)); }
   }
   const TX={
+    modeJegy:['Mód gomb: jegy','Jegy'], modeBerlet:['Mód gomb: bérlet','Bérlet'], modeBerletHint:['Bérlet mód leírása','Bérlet mód: minden beolvasott kód érvényes.'], scanBerlet:['Szkenner állapot: bérlet mód','BÉRLET SZKENNELÉS'], kMode:['Sor: Mód','Mód'], passType:['Bérlet alap típusa','Bérlet'], whyPass:['Bérlet: érvényességi szöveg','Bérlet – korlátlan érvényesség'], passValid:['Bérlet: érvényes -ig szöveg','Visszavonásig'],
     secDevice:['Szakasz cím: Eszköz','Eszköz'], secToday:['Szakasz cím: Mai nap','Mai nap'], secLast:['Szakasz cím: Utolsó','Utolsó'], secResult:['Szakasz cím: Eredmény','Eredmény'], secCheck:['Szakasz cím: Ellenőrzés','Ellenőrzés'],
     kDevice:['Sor: Eszköz','Eszköz'], kInsp:['Sor: Ellenőr','Ellenőr'], kShift:['Sor: Műszak','Műszak'], kIn:['Sor: Beléptetve','Beléptetve'], kOut:['Sor: Elutasítva','Elutasítva'], kFine:['Sor: Pótdíj','Pótdíj'], kRes:['Sor: Eredmény','Eredmény'], kWhy:['Sor: Ok','Ok'], kTicket:['Sor: Jegy','Jegy'], kTime:['Sor: Idő','Idő'],
     kType:['Sor: Jegy típusa','Jegy típusa'], kSerial:['Sor: Sorszám','Sorszám'], kFrom:['Sor: Érvényes -tól','Érvényes -tól'], kTo:['Sor: Érvényes -ig','Érvényes -ig'], kDisc:['Sor: Kedvezmény','Kedvezmény'], kName:['Sor: Név','Név'], kChecked:['Sor: Ellenőrizve','Ellenőrizve'], kPlace:['Sor: Helyszín','Helyszín'], kTxn:['Sor: Tranzakció','Tranzakció'],
@@ -312,7 +324,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   const COL={status:['Indítóképernyő háttér','#4a148c'],bar:['Felső sáv (készenlét)','#6a1b9a'],btn:['Bevitel gomb','#8e44ad'],page:['Háttér (készenlét)','#ffffff'],muted:['Címkék szürke','#555555'],line:['Elválasztó vonalak','#d9d9d9'],ok:['ÉRVÉNYES háttér','#2e7d32'],'ok-dark':['ÉRVÉNYES gomb','#1b5e20'],bad:['ÉRVÉNYTELEN háttér','#c62828'],'bad-dark':['ÉRVÉNYTELEN gomb','#8e1b1b'],frame:['Kamera keret','#69f0ae'],laser:['Lézervonal','#ff3b30']};
   function applyColors(){ const r=document.documentElement.style; for(const k in COL){ const v=cfg.colors&&cfg.colors[k]; if(v) r.setProperty('--'+k,v); else r.removeProperty('--'+k); } const th=document.querySelector('meta[name=theme-color]'); if(th) th.content=(cfg.colors&&cfg.colors.status)||COL.status[1]; }
   function applyTexts(){ document.querySelectorAll('[data-t]').forEach(el=>{ el.textContent=tx(el.getAttribute('data-t')); }); $('codeInput').placeholder=tx('codePh'); }
-  const cfg=Object.assign({title:'Jegyellenőrzés',sub:'Beléptetési pont · Főbejárat',welcome:'Belépés engedélyezve. Jó szórakozást!',deny:'Belépés megtagadva',id:'E-0001',logo:'',cap:'Olvassa be a belépőjegy kódját',term:'T-0412',icon:'',pin:'0000',tx:{},colors:{},spTitle:'',spSub:'',spSec:2,preview:false,appName:'',shift:'',info1l:'Vonal',info1v:'',info2l:'Szakasz',info2v:'',fine:8000},window.__PRESET||{},store.get('cfg',{}));
+  const cfg=Object.assign({title:'Jegyellenőrzés',sub:'Beléptetési pont · Főbejárat',welcome:'Belépés engedélyezve. Jó szórakozást!',deny:'Belépés megtagadva',id:'E-0001',logo:'',cap:'Olvassa be a belépőjegy kódját',term:'T-0412',icon:'',pin:'0000',tx:{},colors:{},spTitle:'',spSub:'',spSec:2,preview:false,appName:'',shift:'',info1l:'Vonal',info1v:'',info2l:'Szakasz',info2v:'',fine:8000,mode:'jegy'},window.__PRESET||{},store.get('cfg',{}));
 
   const ftFine=n=>String(n||0).replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' Ft';
   function kv(id,rows){ const box=$(id); box.innerHTML=''; for(const [k,v] of rows){ if(v==null||v==='') continue; const d=document.createElement('div'),a=document.createElement('span'),b=document.createElement('span'); a.textContent=k; b.textContent=v; d.append(a,b); box.appendChild(d); } }
@@ -407,6 +419,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   }
   function validate(t){
     const used=store.get('used',{}), now=new Date();
+    if(cfg.mode==='berlet'){ if(!t.type) t.type=tx('passType'); t.passMode=true; return {ok:true,kind:'ok',verdict:tx('vValid'),why:tx('whyPass')}; }
     if(t.flag==='invalid') return {ok:false,kind:'invalid',verdict:tx('vInvalid'),why:tx('whyFlag')};
     if(t.start&&t.start>now) return {ok:false,kind:'invalid',verdict:tx('vInvalid'),why:tx('whyNotYet')};
     if(t.end&&t.end<now) return {ok:false,kind:'expired',verdict:tx('vExpired'),why:tx('whyExpired')+' '+fmtFull(t.end)};
@@ -436,8 +449,8 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     const txn=(store.get('txn',0)||0)+1; store.set('txn',txn);
     const txnS=now.getFullYear()+pad(now.getMonth()+1)+pad(now.getDate())+'-'+String(txn).padStart(5,'0');
     $('codeInput').value='';
-    kv('kvResult',[[tx('kRes'),v.ok?tx('resOk'):v.verdict],[tx('kWhy'),v.ok?'':v.why],[tx('kName'),t.name],[tx('kType'),t.type],[tx('kSerial'),shortCode(t.code)],[tx('kFrom'),t.start?fmtFull(t.start):''],[tx('kTo'),t.end?fmtFull(t.end):''],[tx('kDisc'),t.disc]]);
-    kv('kvCheck',[[tx('kChecked'),fmtFullS(now)],[tx('kPlace'),cfg.sub],[tx('kDevice'),cfg.term],[tx('kInsp'),cfg.id],v.ok?[tx('kTxn'),txnS]:[tx('kFine'),ftFine(cfg.fine)]]);
+    kv('kvResult',[[tx('kRes'),v.ok?tx('resOk'):v.verdict],[tx('kWhy'),v.ok?'':v.why],[tx('kName'),t.name],[tx('kType'),t.type],[tx('kSerial'),shortCode(t.code)],[tx('kFrom'),t.start?fmtFull(t.start):''],[tx('kTo'),t.passMode?tx('passValid'):(t.end?fmtFull(t.end):'')],[tx('kDisc'),t.disc]]);
+    kv('kvCheck',[[tx('kMode'),t.passMode?tx('modeBerlet'):tx('modeJegy')],[tx('kChecked'),fmtFullS(now)],[tx('kPlace'),cfg.sub],[tx('kDevice'),cfg.term],[tx('kInsp'),cfg.id],v.ok?[tx('kTxn'),txnS]:[tx('kFine'),ftFine(cfg.fine)]]);
     $('rMain').textContent=v.ok?tx('btnNext'):tx('btnFine'); $('rSec').textContent=tx('btnOverride'); $('rSec').hidden=v.ok;
     hist.unshift({name:t.name,type:t.type,time:fmtHM(now),ok:v.ok,let:false,fine:false,code:t.code,verdict:v.verdict}); store.set('hist',hist); renderRows();
     try{ navigator.vibrate&&navigator.vibrate(v.ok?[80]:[120,80,120]); }catch(e){}
@@ -478,7 +491,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     still.hidden=true; camMsg.hidden=true; frame.hidden=false; video.srcObject=stream; await video.play().catch(()=>{});
     running=true; $('navScan').classList.add('active'); applyPreview(); setScan(true); loop();
   }
-  function setScan(on,msg){ const st=$('scanstate'); st.classList.toggle('off',!on); $('scanState').textContent=on?tx('scanReady'):tx('scanOff'); $('scanErr').hidden=!msg; $('scanErr').textContent=msg||''; }
+  function setScan(on,msg){ const st=$('scanstate'); st.classList.toggle('off',!on); $('scanState').textContent=on?(cfg.mode==='berlet'?tx('scanBerlet'):tx('scanReady')):tx('scanOff'); $('scanErr').hidden=!msg; $('scanErr').textContent=msg||''; }
   function applyPreview(){ const on=!!cfg.preview; $('cam').hidden=!on; $('camBtn').classList.toggle('on',on); if(on){ $('cam').insertBefore(video,$('cam').firstChild); video.hidden=!running; } else { $('camHold').appendChild(video); video.hidden=false; } }
   function stopCamera(){ running=false; if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; } frame.hidden=true; camMsg.hidden=false; camMsg.textContent=tx('camStopped'); $('navScan').classList.remove('active'); setScan(false); }
   function camFail(m){ camMsg.hidden=false; camMsg.textContent=m; frame.hidden=true; setScan(false,m); }
@@ -520,6 +533,13 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   function renderNotes(){ const n=store.get('notes',[]); const L=$('noteLog'); L.innerHTML=''; for(const it of n.slice(0,30)){ const d=document.createElement('div'),s=document.createElement('span'); s.textContent=it.t; d.append(s,document.createTextNode(it.x)); L.appendChild(d); } }
   const openLog=()=>{ renderNotes(); openSheet('logBox'); };
   $('navLog').addEventListener('click',openLog); $('menuBtn').addEventListener('click',openLog);
+  function applyMode(){ const b=cfg.mode==='berlet'; $('modeJegy').classList.toggle('on',!b); $('modeBerlet').classList.toggle('on',b);
+    $('modeJegy').setAttribute('aria-pressed',String(!b)); $('modeBerlet').setAttribute('aria-pressed',String(b));
+    $('modeHint').hidden=!b; $('modeHint').textContent=tx('modeBerletHint'); if(running) setScan(true); }
+  function setMode(m){ cfg.mode=m; store.set('cfg',cfg); applyMode(); }
+  $('modeJegy').addEventListener('click',()=>setMode('jegy')); $('modeBerlet').addEventListener('click',()=>setMode('berlet'));
+  $('mMode').addEventListener('click',()=>{ setMode(cfg.mode==='berlet'?'jegy':'berlet'); closeSheets(); });
+  applyMode();
   $('brandBtn').addEventListener('click',()=>{ $('menuTitle').textContent=cfg.title||'Menü'; openSheet('menuBox'); });
   $('mLog').addEventListener('click',openLog); $('mSet').addEventListener('click',()=>$('navSet').click());
   $('mPreview').addEventListener('click',()=>{ $('camBtn').click(); closeSheets(); }); $('mSwitch').addEventListener('click',()=>{ $('navHome').click(); closeSheets(); });
@@ -548,6 +568,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 
   /* test scans */
   $('testOk').addEventListener('click',()=>{ closeSheets(); showResult('NEV=Teszt Vendég;TIP=Teszt belépő;LEJ=2099.12.31 23:59;ID=TESZT-'+String(Date.now()%10000).padStart(4,'0'),true); });
+  $('testPass').addEventListener('click',()=>{ closeSheets(); const m=cfg.mode; cfg.mode='berlet'; showResult('TESZT-BERLET-'+String(Date.now()%10000).padStart(4,'0'),true); cfg.mode=m; });
   $('testBad').addEventListener('click',()=>{ closeSheets(); showResult('NEV=Teszt Vendég;TIP=Teszt belépő;LEJ=2020.01.01;ID=TESZT-LEJART',true); });
 
   /* boss settings: every text editable, PIN protected */
@@ -575,7 +596,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     if(json&&typeof json==='object'){ for(const k in json) m[k]=normHex(json[k]); }
     else $('palText').value.split(/[;,\n]/).forEach(p=>{ const i=p.indexOf('='); if(i>0) m[p.slice(0,i).trim()]=normHex(p.slice(i+1)); });
     let n=0; setAll(k=>{ if(m[k]){ n++; return m[k]; } return null; }); $('palLoad').textContent=n?'Betöltve ('+n+')':'Nincs érvényes kód'; setTimeout(()=>$('palLoad').textContent='Betöltés a kódból',1500); });
-  $('bossSave').addEventListener('click',()=>{ const o={}; for(const k in TX){ const v=$('tx_'+k).value.trim(); if(v) o[k]=v; } cfg.tx=o; const c={}; for(const k in COL){ const v=$('col_'+k).value; if(v&&v.toLowerCase()!==COL[k][1]) c[k]=v; } cfg.colors=c; const np=$('newPin').value.trim(); if(np) cfg.pin=np; store.set('cfg',cfg); drawHeader(); applyColors(); renderRows(); closeSheets(); });
+  $('bossSave').addEventListener('click',()=>{ const o={}; for(const k in TX){ const v=$('tx_'+k).value.trim(); if(v) o[k]=v; } cfg.tx=o; const c={}; for(const k in COL){ const v=$('col_'+k).value; if(v&&v.toLowerCase()!==COL[k][1]) c[k]=v; } cfg.colors=c; const np=$('newPin').value.trim(); if(np) cfg.pin=np; store.set('cfg',cfg); drawHeader(); applyColors(); applyMode(); renderRows(); closeSheets(); });
   $('bossReset').addEventListener('click',()=>{ for(const k in TX) $('tx_'+k).value=''; });
   sheets.push('bossBox');
 
