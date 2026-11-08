@@ -321,7 +321,7 @@ html.night .dvItem.text{color:#eee}
     <div class="log" id="noteLog"></div>
     <div class="sys">
       <div class="syshd" data-t="sysHd">Rendszer</div>
-      <div class="sysrow"><span data-t="sysApp">Alkalmazás</span><span data-t="sysAppVal">Belépőjegy terminál v2.5.0-dev</span></div>
+      <div class="sysrow"><span data-t="sysApp">Alkalmazás</span><span data-t="sysAppVal">Belépőjegy terminál v2.6.0</span></div>
       <div class="sysrow"><span data-t="sysTermL">Terminál</span><span id="sysTerm">T-0412</span></div>
       <div class="sysrow"><span data-t="sysInsp">Jegyellenőr</span><span id="sysId"></span></div>
       <div class="sysrow"><span data-t="sysStartL">Szolgálat kezdete</span><span id="sysStart"></span></div>
@@ -330,6 +330,7 @@ html.night .dvItem.text{color:#eee}
     <div class="btns"><button type="button" class="primary" id="instBtn" data-t="instBtn">⤓ Telepítés a kezdőképernyőre</button><a class="btn-link" id="instPage" href="telepites.html" hidden>Telepítő oldal / QR</a><button type="button" id="dlBtn">Fájl mentése</button></div>
     <div class="dlhint" id="dlHint">A letöltött <b>belepojegy-terminal.html</b> fájlt Chrome-ban megnyitva: ⋮ menü → „Hozzáadás a kezdőképernyőhöz” – saját ikonnal, teljes képernyőn fut.</div>
     <div class="btns"><button type="button" id="testOk">Teszt: érvényes jegy</button><button type="button" id="testBad">Teszt: lejárt jegy</button><button type="button" id="testPass">Teszt: bérlet</button></div>
+    <div class="btns"><button type="button" id="testDay">Teszt: mai dátumú jegy</button><button type="button" id="testWrongDay">Teszt: más napra szóló jegy</button></div>
     <div class="btns"><button type="button" id="clearBtn" data-t="clearBtn">Beolvasások és napló törlése</button></div>
   </div>
 
@@ -355,6 +356,10 @@ html.night .dvItem.text{color:#eee}
     <label>Elutasító felirat (érvénytelen jegynél)<input id="sDeny" placeholder="Belépés nem engedélyezett"></label>
     <label>Felirat a szkenner alatt<input id="sCap" placeholder="Olvassa be a belépőjegy kódját"></label>
     <label style="flex-direction:row;align-items:center;gap:10px"><input type="checkbox" id="sPreview" style="width:auto"> Kamera előnézet mutatása (alap: rejtve, a szkenner a háttérben fut)</label>
+    <div class="syshd" style="margin:4px 0 0">Dátum ellenőrzés</div>
+    <label style="flex-direction:row;align-items:center;gap:10px"><input type="checkbox" id="sDateCheck" style="width:auto"> A jegyen lévő dátumot ellenőrzi: csak aznap érvényes</label>
+    <div class="btns" style="margin:0"><label style="flex:1">Hajnali türelmi idő (óra)<input id="sGrace" inputmode="numeric" placeholder="6"></label><label style="flex-direction:row;align-items:center;gap:10px;flex:2"><input type="checkbox" id="sDateReq" style="width:auto"> Dátum nélküli jegy = érvénytelen</label></div>
+    <div class="dlhint">A dátumnak a QR-kódban kell lennie (pl. <b>DATUM=2026.11.21</b>, vagy JSON <b>"datum"</b>, vagy a kód szövegében bárhol egy 2026.11.21 / 21.11.2026 alakú dátum). A türelmi idő: éjfél után hajnali 6-ig még az előző napi jegy érvényes.</div>
     <div class="syshd" style="margin:4px 0 0">Éjszakai mód</div>
     <div class="btns" style="margin:0"><label style="flex:2">Mikor<select id="sNight" style="font:inherit;width:100%;border:1px solid var(--line);border-radius:4px;padding:10px;background:#fff;color:var(--fg)"><option value="off">Kikapcsolva</option><option value="on">Mindig</option><option value="auto">Időzítve</option><option value="system">Telefon sötét módja szerint</option></select></label><label style="flex:1">-tól<input id="sNightFrom" type="time"></label><label style="flex:1">-ig<input id="sNightTo" type="time"></label></div>
     <label>Tompítás éjszaka (0–70 %, a kijelző fényét csökkenti)<input id="sDim" inputmode="numeric" placeholder="0"></label>
@@ -595,6 +600,7 @@ html.night .dvItem.text{color:#eee}
   const fmtHM=d=>pad(d.getHours())+':'+pad(d.getMinutes());
   const fmtFull=d=>d.getFullYear()+'.'+pad(d.getMonth()+1)+'.'+pad(d.getDate())+'. '+pad(d.getHours())+':'+pad(d.getMinutes());
   const fmtFullS=d=>fmtFull(d)+':'+pad(d.getSeconds());
+  const fmtDay=d=>d.getFullYear()+'.'+pad(d.getMonth()+1)+'.'+pad(d.getDate())+'.';
   const store={get(k,f){try{const v=localStorage.getItem(k);return v==null?f:JSON.parse(v)}catch(e){return f}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
   const DEFAULT_ICON=$('icoLink').getAttribute('href');
   const b64u=str=>btoa(unescape(encodeURIComponent(str)));
@@ -620,9 +626,10 @@ html.night .dvItem.text{color:#eee}
     emptyList:['Üres lista szövege','Még nincs beolvasás. Tartsa a jegy kódját a keretbe.'],
     manualTitle:['Kézi bevitel – cím','Kézi bevitel'], manualLabel:['Kézi bevitel – mező','Jegy kódja / sorszáma'], manualOk:['Kézi bevitel – gomb','Ellenőriz'], cancel:['Mégse gomb','Mégse'], close:['Bezár gomb','Bezár'],
     logTitle:['Napló – cím','Napló'], noteLabel:['Napló – új bejegyzés','Új bejegyzés'], noteSave:['Napló – rögzítés gomb','Rögzítés'], clearBtn:['Törlés gomb','Beolvasások és napló törlése'], instBtn:['Telepítés gomb','⤓ Telepítés a kezdőképernyőre'],
-    sysHd:['Rendszer panel – cím','Rendszer'], sysApp:['Rendszer – alkalmazás','Alkalmazás'], sysAppVal:['Rendszer – alkalmazás neve/verzió','Belépőjegy terminál v2.5.0-dev'], sysTermL:['Rendszer – terminál','Terminál'], sysInsp:['Rendszer – ellenőr','Jegyellenőr'], sysStartL:['Rendszer – szolgálat kezdete','Szolgálat kezdete'], sysCountL:['Rendszer – számláló','Beengedve / elutasítva'],
+    sysHd:['Rendszer panel – cím','Rendszer'], sysApp:['Rendszer – alkalmazás','Alkalmazás'], sysAppVal:['Rendszer – alkalmazás neve/verzió','Belépőjegy terminál v2.6.0'], sysTermL:['Rendszer – terminál','Terminál'], sysInsp:['Rendszer – ellenőr','Jegyellenőr'], sysStartL:['Rendszer – szolgálat kezdete','Szolgálat kezdete'], sysCountL:['Rendszer – számláló','Beengedve / elutasítva'],
     resTitle:['Eredmény – fejléc','Ellenőrzés eredménye'], codeLabel:['Eredmény – jegykód felirat','Jegykód:'], txn:['Eredmény – tranzakció felirat','Tranzakció'], validityLabel:['Eredmény – érvényesség felirat','Érvényesség:'],
     vValid:['Ítélet: érvényes','ÉRVÉNYES'], vInvalid:['Ítélet: érvénytelen','ÉRVÉNYTELEN'], vExpired:['Ítélet: lejárt','LEJÁRT'], vUsed:['Ítélet: már felhasznált','MÁR FELHASZNÁLT'],
+    kDate:['Sor: Jegy dátuma','Jegy dátuma'], whyWrongDay:['Indok: más napra szól','A jegy más napra szól:'], whyNoDate:['Indok: nincs dátum a jegyen','A jegyen nincs dátum'],
     whyFlag:['Indok: érvénytelenként jelölt','A jegy érvénytelenként van megjelölve'], whyNotYet:['Indok: még nem érvényes','A jegy még nem érvényes'], whyExpired:['Indok: lejárt (dátum elé)','A jegy érvényessége lejárt:'], whyUsed:['Indok: felhasznált (idő elé)','Ezzel a jeggyel már beléptek:'],
     cGuest:['Adatlap: vendég','Vendég'], cType:['Adatlap: jegytípus','Jegytípus'], cCode:['Adatlap: sorszám','Jegy sorszáma'], cFrom:['Adatlap: érvényes ettől','Érvényes ettől'], cTo:['Adatlap: érvényes eddig','Érvényes eddig'], cChecked:['Adatlap: ellenőrizve','Ellenőrizve'], cPoint:['Adatlap: beléptetési pont','Beléptetési pont'],
     btnAdmit:['Gomb: beléptetés','Beléptetés · következő vendég'], btnReject:['Gomb: elutasítás','Elutasítás · következő vendég'], btnOverride:['Gomb: mégis beengedés','Mégis beengedem'],
@@ -644,7 +651,7 @@ html.night .dvItem.text{color:#eee}
   function toggleNight(){ cfg.night=nightActive()?'off':'on'; store.set('cfg',cfg); applyNight(); }
   setInterval(applyNight,30000); try{ matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyNight); }catch(e){}
   function applyTexts(){ document.querySelectorAll('[data-t]').forEach(el=>{ el.textContent=tx(el.getAttribute('data-t')); }); $('codeInput').placeholder=tx('codePh'); }
-  const cfg=Object.assign({title:'Jegyellenőrzés',sub:'Beléptetési pont · Főbejárat',welcome:'Belépés engedélyezve. Jó szórakozást!',deny:'Belépés megtagadva',id:'E-0001',logo:'',cap:'Olvassa be a belépőjegy kódját',term:'T-0412',icon:'',pin:'0000',tx:{},colors:{},spTitle:'',spSub:'',spSec:2,preview:false,appName:'',shift:'',info1l:'Vonal',info1v:'',info2l:'Szakasz',info2v:'',fine:8000,mode:'jegy'},window.__PRESET||{},store.get('cfg',{}));
+  const cfg=Object.assign({title:'Jegyellenőrzés',sub:'Beléptetési pont · Főbejárat',welcome:'Belépés engedélyezve. Jó szórakozást!',deny:'Belépés megtagadva',id:'E-0001',logo:'',cap:'Olvassa be a belépőjegy kódját',term:'T-0412',icon:'',pin:'0000',tx:{},colors:{},spTitle:'',spSub:'',spSec:2,preview:false,appName:'',shift:'',info1l:'Vonal',info1v:'',info2l:'Szakasz',info2v:'',fine:8000,mode:'jegy',dateCheck:true,graceH:6,dateRequire:false},window.__PRESET||{},store.get('cfg',{}));
 
   const ftFine=n=>String(n||0).replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' Ft';
   function kv(id,rows){ const box=$(id); box.innerHTML=''; for(const [k,v] of rows){ if(v==null||v==='') continue; const d=document.createElement('div'),a=document.createElement('span'),b=document.createElement('span'); a.textContent=k; b.textContent=v; d.append(a,b); box.appendChild(d); } }
@@ -726,17 +733,20 @@ html.night .dvItem.text{color:#eee}
     if(m) return new Date(+m[1],+m[2]-1,+m[3],m[4]?+m[4]:(startOfDay?0:23),m[5]?+m[5]:(startOfDay?0:59));
     const d=new Date(s); return isNaN(d)?null:d; }
   function shortCode(s){ s=String(s); return s.length>24?s.slice(0,24)+'…':s; }
+  function findDay(s){ if(!s) return null; s=String(s); let m=s.match(/(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/); if(m) return new Date(+m[1],+m[2]-1,+m[3]); m=s.match(/(\d{1,2})[.\-\/](\d{1,2})[.\-\/](\d{4})/); if(m) return new Date(+m[3],+m[2]-1,+m[1]); return null; }
   function parseTicket(text){
-    const t={name:'',type:'',start:null,end:null,code:text,flag:null,disc:''};
+    const t={name:'',type:'',start:null,end:null,code:text,flag:null,disc:'',day:null};
+    const r=parseTicket0(text,t); if(!r.day){ r.day=findDay(text); } return r; }
+  function parseTicket0(text,t){
     try{ const j=JSON.parse(text); if(j&&typeof j==='object'){
       t.name=j.nev||j.vendeg||j.name||t.name; t.type=j.tipus||j.jegy||j.type||t.type;
       t.start=parseDate(j.kezdet||j.kezdete||j.start,true); t.end=parseDate(j.lejarat||j.vege||j.expiry||j.exp);
-      t.code=j.kod||j.id||j.code||text; t.disc=j.kedvezmeny||j.kedv||j.discount||''; if(j.felhasznalt||j.used) t.flag='used'; if(j.ervenytelen||j.invalid) t.flag='invalid'; return t; } }catch(e){}
+      t.code=j.kod||j.id||j.code||text; t.disc=j.kedvezmeny||j.kedv||j.discount||''; t.day=findDay(j.datum||j.dátum||j.nap||j.date||j.day||''); if(j.felhasznalt||j.used) t.flag='used'; if(j.ervenytelen||j.invalid) t.flag='invalid'; return t; } }catch(e){}
     if(/[=:]/.test(text)){
       const kv={}; text.split(/[;|\n]/).forEach(p=>{ const i=p.search(/[=:]/); if(i>0) kv[p.slice(0,i).trim().toUpperCase()]=p.slice(i+1).trim(); });
       const g=(...ks)=>{ for(const k of ks) if(kv[k]!=null) return kv[k]; };
-      const nm=g('NEV','NÉV','VENDEG','VENDÉG','NAME'), ty=g('TIP','TIPUS','TÍPUS','JEGY','TYPE'), st=g('KEZD','KEZDET','KEZDETE','START'), en=g('LEJ','LEJARAT','LEJÁRAT','VEGE','VÉGE','EXP','VALID'), id=g('ID','KOD','KÓD','CODE'), dc=g('KEDV','KEDVEZMENY','KEDVEZMÉNY','DISC');
-      if(nm||ty||st||en||id){ t.name=nm||t.name; t.type=ty||t.type; t.start=parseDate(st,true); t.end=parseDate(en); t.code=id||text; t.disc=dc||''; return t; }
+      const nm=g('NEV','NÉV','VENDEG','VENDÉG','NAME'), ty=g('TIP','TIPUS','TÍPUS','JEGY','TYPE'), st=g('KEZD','KEZDET','KEZDETE','START'), en=g('LEJ','LEJARAT','LEJÁRAT','VEGE','VÉGE','EXP','VALID'), id=g('ID','KOD','KÓD','CODE'), dc=g('KEDV','KEDVEZMENY','KEDVEZMÉNY','DISC'), dy=g('DATUM','DÁTUM','NAP','DATE','DAY');
+      if(nm||ty||st||en||id||dy){ t.name=nm||t.name; t.type=ty||t.type; t.start=parseDate(st,true); t.end=parseDate(en); t.code=id||text; t.disc=dc||''; t.day=findDay(dy); return t; }
     }
     if(/ÉRVÉNYTELEN|ERVENYTELEN|INVALID/i.test(text)) t.flag='invalid';
     return t;
@@ -745,6 +755,9 @@ html.night .dvItem.text{color:#eee}
     const used=store.get('used',{}), now=new Date();
     if(cfg.mode==='berlet'){ if(!t.type) t.type=tx('passType'); t.passMode=true; return {ok:true,kind:'ok',verdict:tx('vValid'),why:tx('whyPass')}; }
     if(t.flag==='invalid') return {ok:false,kind:'invalid',verdict:tx('vInvalid'),why:tx('whyFlag')};
+    if(cfg.dateCheck!==false){ const grace=Math.max(0,Math.min(12,parseInt(cfg.graceH,10)||0)); const eff=new Date(now); if(eff.getHours()<grace) eff.setDate(eff.getDate()-1); eff.setHours(0,0,0,0);
+      if(t.day){ const d=new Date(t.day); d.setHours(0,0,0,0); if(d.getTime()!==eff.getTime()){ const ds=fmtDay(d); if(d>eff) return {ok:false,kind:'invalid',verdict:tx('vInvalid'),why:tx('whyWrongDay')+' '+ds+' ('+tx('whyNotYet').toLowerCase()+')'}; return {ok:false,kind:'expired',verdict:tx('vExpired'),why:tx('whyWrongDay')+' '+ds}; } }
+      else if(cfg.dateRequire) return {ok:false,kind:'invalid',verdict:tx('vInvalid'),why:tx('whyNoDate')}; }
     if(t.start&&t.start>now) return {ok:false,kind:'invalid',verdict:tx('vInvalid'),why:tx('whyNotYet')};
     if(t.end&&t.end<now) return {ok:false,kind:'expired',verdict:tx('vExpired'),why:tx('whyExpired')+' '+fmtFull(t.end)};
     if(t.flag==='used'||used[t.code]) return {ok:false,kind:'used',verdict:tx('vUsed'),why:tx('whyUsed')+' '+(used[t.code]||'')};
@@ -773,7 +786,7 @@ html.night .dvItem.text{color:#eee}
     const txn=(store.get('txn',0)||0)+1; store.set('txn',txn);
     const txnS=now.getFullYear()+pad(now.getMonth()+1)+pad(now.getDate())+'-'+String(txn).padStart(5,'0');
     $('codeInput').value='';
-    kv('kvResult',[[tx('kRes'),v.ok?tx('resOk'):v.verdict],[tx('kWhy'),v.ok?'':v.why],[tx('kName'),t.name],[tx('kType'),t.type],[tx('kSerial'),shortCode(t.code)],[tx('kFrom'),t.start?fmtFull(t.start):''],[tx('kTo'),t.passMode?tx('passValid'):(t.end?fmtFull(t.end):'')],[tx('kDisc'),t.disc]]);
+    kv('kvResult',[[tx('kRes'),v.ok?tx('resOk'):v.verdict],[tx('kWhy'),v.ok?'':v.why],[tx('kName'),t.name],[tx('kType'),t.type],[tx('kSerial'),shortCode(t.code)],[tx('kDate'),t.day?fmtDay(t.day):''],[tx('kFrom'),t.start?fmtFull(t.start):''],[tx('kTo'),t.passMode?tx('passValid'):(t.end?fmtFull(t.end):'')],[tx('kDisc'),t.disc]]);
     kv('kvCheck',[[tx('kMode'),t.passMode?tx('modeBerlet'):tx('modeJegy')],[tx('kChecked'),fmtFullS(now)],[tx('kPlace'),cfg.sub],[tx('kDevice'),cfg.term],[tx('kInsp'),cfg.id],v.ok?[tx('kTxn'),txnS]:[tx('kFine'),ftFine(cfg.fine)]]);
     $('rMain').textContent=v.ok?tx('btnNext'):tx('btnFine'); $('rSec').textContent=tx('btnOverride'); $('rSec').hidden=v.ok;
     hist.unshift({name:t.name,type:t.type,time:fmtHM(now),ok:v.ok,let:false,fine:false,code:t.code,verdict:v.verdict}); store.set('hist',hist); renderRows();
@@ -905,7 +918,7 @@ html.night .dvItem.text{color:#eee}
 
   /* settings incl. logo upload (stored as a small data URL) */
   let pendingLogo=null;
-  $('navSet').addEventListener('click',()=>{ $('sTitle').value=cfg.title; $('sSub').value=cfg.sub; $('sWelcome').value=cfg.welcome; $('sDeny').value=cfg.deny; $('sId').value=cfg.id; $('sCap').value=cfg.cap; $('sTerm').value=cfg.term; $('sAppName').value=cfg.appName||''; $('sShift').value=cfg.shift||''; $('sI1l').value=cfg.info1l||''; $('sI1v').value=cfg.info1v||''; $('sI2l').value=cfg.info2l||''; $('sI2v').value=cfg.info2v||''; $('sFine').value=cfg.fine; $('sPreview').checked=!!cfg.preview; $('sHw').checked=!!cfg.hwScan; $('sNight').value=cfg.night||'off'; $('sNightFrom').value=cfg.nightFrom||'20:00'; $('sNightTo').value=cfg.nightTo||'06:00'; $('sDim').value=cfg.dim||''; $('sSpTitle').value=cfg.spTitle||''; $('sSpSub').value=cfg.spSub||''; $('sSpSec').value=cfg.spSec;
+  $('navSet').addEventListener('click',()=>{ $('sTitle').value=cfg.title; $('sSub').value=cfg.sub; $('sWelcome').value=cfg.welcome; $('sDeny').value=cfg.deny; $('sId').value=cfg.id; $('sCap').value=cfg.cap; $('sTerm').value=cfg.term; $('sAppName').value=cfg.appName||''; $('sShift').value=cfg.shift||''; $('sI1l').value=cfg.info1l||''; $('sI1v').value=cfg.info1v||''; $('sI2l').value=cfg.info2l||''; $('sI2v').value=cfg.info2v||''; $('sFine').value=cfg.fine; $('sPreview').checked=!!cfg.preview; $('sHw').checked=!!cfg.hwScan; $('sDateCheck').checked=cfg.dateCheck!==false; $('sGrace').value=cfg.graceH==null?6:cfg.graceH; $('sDateReq').checked=!!cfg.dateRequire; $('sNight').value=cfg.night||'off'; $('sNightFrom').value=cfg.nightFrom||'20:00'; $('sNightTo').value=cfg.nightTo||'06:00'; $('sDim').value=cfg.dim||''; $('sSpTitle').value=cfg.spTitle||''; $('sSpSub').value=cfg.spSub||''; $('sSpSec').value=cfg.spSec;
     pendingLogo=cfg.logo||null; $('sLogoPrev').hidden=!pendingLogo; if(pendingLogo) $('sLogoPrev').src=pendingLogo;
     pendingIcon=cfg.icon||null; $('sIconPrev').hidden=false; $('sIconPrev').src=pendingIcon||DEFAULT_ICON; openSheet('setBox'); });
   let pendingIcon=null;
@@ -919,12 +932,14 @@ html.night .dvItem.text{color:#eee}
       c.getContext('2d').drawImage(img,0,0,c.width,c.height); pendingLogo=c.toDataURL('image/png'); $('sLogoPrev').src=pendingLogo; $('sLogoPrev').hidden=false; URL.revokeObjectURL(url); $('sLogo').value=''; };
     img.src=url; });
   $('sLogoDel').addEventListener('click',()=>{ pendingLogo=null; $('sLogoPrev').hidden=true; });
-  $('setSave').addEventListener('click',()=>{ cfg.title=$('sTitle').value.trim()||'Jegyellenőrzés'; cfg.sub=$('sSub').value.trim(); cfg.welcome=$('sWelcome').value.trim(); cfg.deny=$('sDeny').value.trim(); cfg.id=$('sId').value.trim()||'#0001'; cfg.cap=$('sCap').value.trim()||'Olvassa be a belépőjegy kódját'; cfg.term=$('sTerm').value.trim()||'T-0412'; cfg.appName=$('sAppName').value.trim(); cfg.shift=$('sShift').value.trim(); cfg.info1l=$('sI1l').value.trim(); cfg.info1v=$('sI1v').value.trim(); cfg.info2l=$('sI2l').value.trim(); cfg.info2v=$('sI2v').value.trim(); cfg.fine=parseInt($('sFine').value,10)||0; cfg.preview=$('sPreview').checked; const hwWas=!!cfg.hwScan; cfg.hwScan=$('sHw').checked; cfg.night=$('sNight').value; cfg.nightFrom=$('sNightFrom').value; cfg.nightTo=$('sNightTo').value; cfg.dim=parseInt($('sDim').value,10)||0; applyNight(); applyPreview(); if(cfg.hwScan!==hwWas){ if(cfg.hwScan){ if(running) stopCamera(); hwInit(); } else startCamera(); } cfg.spTitle=$('sSpTitle').value.trim(); cfg.spSub=$('sSpSub').value.trim(); cfg.spSec=parseFloat(String($('sSpSec').value).replace(',','.')); if(isNaN(cfg.spSec)) cfg.spSec=2; cfg.logo=pendingLogo||''; cfg.icon=pendingIcon||'';
+  $('setSave').addEventListener('click',()=>{ cfg.title=$('sTitle').value.trim()||'Jegyellenőrzés'; cfg.sub=$('sSub').value.trim(); cfg.welcome=$('sWelcome').value.trim(); cfg.deny=$('sDeny').value.trim(); cfg.id=$('sId').value.trim()||'#0001'; cfg.cap=$('sCap').value.trim()||'Olvassa be a belépőjegy kódját'; cfg.term=$('sTerm').value.trim()||'T-0412'; cfg.appName=$('sAppName').value.trim(); cfg.shift=$('sShift').value.trim(); cfg.info1l=$('sI1l').value.trim(); cfg.info1v=$('sI1v').value.trim(); cfg.info2l=$('sI2l').value.trim(); cfg.info2v=$('sI2v').value.trim(); cfg.fine=parseInt($('sFine').value,10)||0; cfg.preview=$('sPreview').checked; const hwWas=!!cfg.hwScan; cfg.hwScan=$('sHw').checked; cfg.dateCheck=$('sDateCheck').checked; cfg.graceH=parseInt($('sGrace').value,10); if(isNaN(cfg.graceH)) cfg.graceH=6; cfg.dateRequire=$('sDateReq').checked; cfg.night=$('sNight').value; cfg.nightFrom=$('sNightFrom').value; cfg.nightTo=$('sNightTo').value; cfg.dim=parseInt($('sDim').value,10)||0; applyNight(); applyPreview(); if(cfg.hwScan!==hwWas){ if(cfg.hwScan){ if(running) stopCamera(); hwInit(); } else startCamera(); } cfg.spTitle=$('sSpTitle').value.trim(); cfg.spSub=$('sSpSub').value.trim(); cfg.spSec=parseFloat(String($('sSpSec').value).replace(',','.')); if(isNaN(cfg.spSec)) cfg.spSec=2; cfg.logo=pendingLogo||''; cfg.icon=pendingIcon||'';
     store.set('cfg',cfg); drawHeader(); applyIcon(); closeSheets(); });
 
   /* test scans */
   $('testOk').addEventListener('click',()=>{ closeSheets(); showResult('NEV=Teszt Vendég;TIP=Teszt belépő;LEJ=2099.12.31 23:59;ID=TESZT-'+String(Date.now()%10000).padStart(4,'0'),true); });
   $('testPass').addEventListener('click',()=>{ closeSheets(); const m=cfg.mode; cfg.mode='berlet'; showResult('TESZT-BERLET-'+String(Date.now()%10000).padStart(4,'0'),true); cfg.mode=m; });
+  $('testDay').addEventListener('click',()=>{ closeSheets(); const d=new Date(); if(d.getHours()<(parseInt(cfg.graceH,10)||0)) d.setDate(d.getDate()-1); showResult('NEV=Teszt Vendég;TIP=Belépő;DATUM='+fmtDay(d)+';ID=TESZT-NAP-'+String(Date.now()%10000).padStart(4,'0'),true); });
+  $('testWrongDay').addEventListener('click',()=>{ closeSheets(); const d=new Date(); d.setDate(d.getDate()+3); showResult('NEV=Teszt Vendég;TIP=Belépő;DATUM='+fmtDay(d)+';ID=TESZT-MASNAP',true); });
   $('testBad').addEventListener('click',()=>{ closeSheets(); showResult('NEV=Teszt Vendég;TIP=Teszt belépő;LEJ=2020.01.01;ID=TESZT-LEJART',true); });
 
   /* boss settings: every text editable, PIN protected */
