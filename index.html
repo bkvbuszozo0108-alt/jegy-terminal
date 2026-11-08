@@ -1017,6 +1017,16 @@ html.night .dvItem.text{color:#eee}
     let sel=null, saveT=null, styleEl=null;
     const save=()=>{ clearTimeout(saveT); saveT=setTimeout(()=>store.set('cfg',cfg),250); };
     const byKey=k=>EDIT.find(e=>e[0]===k);
+    /* responsive scaling: px values are stored relative to dev.refW (app width when edited) and scaled to the current app width */
+    const appW=()=>Math.max(200,document.querySelector('.app').clientWidth||560);
+    const scaleF=()=>{ const r=dev.refW||560; return appW()/r; };
+    const SCALE_KEYS=['tx','ty','fs','rad'], SCALE_PX=['w','h','pad','mar','gap','ls'];
+    const scPx=(v,f)=>String(v).replace(/(-?\d*\.?\d+)px/g,(m,n)=>Math.round(parseFloat(n)*f*10)/10+'px');
+    function rebase(){ const cur=appW(), old=dev.refW||560; if(Math.abs(cur-old)<2){ dev.refW=cur; return; } const f=cur/old;
+      [dev.el,dev.eln||{}].forEach(S=>{ for(const k in S){ const p=S[k]; for(const n of SCALE_KEYS) if(p[n]!=null&&p[n]!=='') p[n]=Math.round(p[n]*f*10)/10; for(const n of SCALE_PX) if(p[n]) p[n]=scPx(p[n],f); } });
+      (dev.items||[]).forEach(it=>{ ['x','y','w','h'].forEach(n=>{ if(it[n]) it[n]=Math.round(it[n]*f); }); });
+      if(dev.splash&&dev.splash.logoW) dev.splash.logoW=Math.round(dev.splash.logoW*f);
+      dev.refW=cur; }
     const esc=s=>String(s);
 
     function buildCss(){
@@ -1025,16 +1035,17 @@ html.night .dvItem.text{color:#eee}
       if(dev.rad!==''&&dev.rad!=null) out+='.topbar input,.topbar .tb,.big,.cam,.brand img,.brand .mark,.modesw,.modehint,.sheet,.sheet .btns button,.sheet input,.sheet textarea{border-radius:'+dev.rad+'px!important}\n';
       if(dev.appW) out+='.app{max-width:'+dev.appW+'px!important}\n';
       const stores=[['',dev.el],['html.night ',dev.eln||{}]];
+      const F=scaleF();
       for(const [pre,S] of stores) for(const k in S){ const e=byKey(k); if(!e) continue; const p=S[k]; let d='';
-        for(const n in p){ const v=p[n]; if(v===''||v==null||v===false) continue;
-          if(n==='hide') d+='display:none!important;'; else if(n==='fs') d+='font-size:'+v+'px!important;'; else if(n==='rad') d+='border-radius:'+v+'px!important;'; else if(n==='op') d+='opacity:'+(v/100)+'!important;';
+        for(const n in p){ let v=p[n]; if(v===''||v==null||v===false) continue; if(SCALE_PX.includes(n)) v=scPx(v,F);
+          if(n==='hide') d+='display:none!important;'; else if(n==='fs') d+='font-size:'+(Math.round(v*F*10)/10)+'px!important;'; else if(n==='rad') d+='border-radius:'+Math.round(v*F)+'px!important;'; else if(n==='op') d+='opacity:'+(v/100)+'!important;';
           else if(CSSMAP[n]) d+=CSSMAP[n]+':'+esc(v)+'!important;'; }
-        if(p.tx||p.ty) d+='transform:'+tf(k,p.tx||0,p.ty||0)+'!important;';
+        if(p.tx||p.ty) d+='transform:'+tf(k,Math.round((p.tx||0)*F),Math.round((p.ty||0)*F))+'!important;';
         if((p.w||p.h)&&INLINE.includes(k)) d+='display:inline-block!important;';
         if(d) out+=e[1].split(',').map(x=>pre+x.trim()).join(',')+'{'+d+'}\n'; }
       const s=dev.splash;
       if(s.grad&&(dev.el.splash&&dev.el.splash.bg)) out+='#splash{background:linear-gradient(160deg,'+dev.el.splash.bg+','+s.grad+')!important}\n';
-      if(s.logoW) out+='#spLogo,#spMark{width:'+s.logoW+'px!important;height:'+s.logoW+'px!important;max-height:none!important}\n';
+      if(s.logoW) out+='#spLogo,#spMark{width:'+Math.round(s.logoW*F)+'px!important;height:'+Math.round(s.logoW*F)+'px!important;max-height:none!important}\n';
       if(s.logoR!==''&&s.logoR!=null) out+='#spLogo,#spMark{border-radius:'+s.logoR+'px!important}\n';
       if(s.logoT) out+='#spLogo{background:transparent!important;padding:0!important}\n';
       if(s.noBar) out+='.spBar{display:none!important}\n';
@@ -1056,7 +1067,7 @@ html.night .dvItem.text{color:#eee}
       else if(cfg.logo){ $('spLogo').src=cfg.logo; $('spLogo').hidden=false; $('spMark').hidden=true; } else { $('spLogo').hidden=true; $('spMark').hidden=false; }
       if(s.foot) $('spFoot').textContent=s.foot; else $('spFoot').textContent=(cfg.term||'')+' · '+tx('footInsp')+' '+cfg.id;
       $('spTitle').textContent=cfg.spTitle||cfg.title||'Jegyellenőr terminál'; $('spSub').textContent=cfg.spSub||'Rendszer betöltése…'; }
-    function apply(){ if(!styleEl){ styleEl=document.createElement('style'); styleEl.id='devStyle'; document.head.appendChild(styleEl); } styleEl.textContent=buildCss(); applyLayout(); applySplash(); if($('dvCssGen')) $('dvCssGen').value=styleEl.textContent; }
+    function apply(){ if(!styleEl){ styleEl=document.createElement('style'); styleEl.id='devStyle'; document.head.appendChild(styleEl); } styleEl.textContent=buildCss(); applyLayout(); applySplash(); if($('devItems')&&dev.items) renderItems(); if($('dvCssGen')) $('dvCssGen').value=styleEl.textContent; }
 
     /* ---- selection ---- */
     function depth(el){ let d=0; while(el){ d++; el=el.parentElement; } return d; }
@@ -1085,7 +1096,7 @@ html.night .dvItem.text{color:#eee}
         lp=setTimeout(()=>{ cancel(); select(k,e.target.closest(byKey(k)[1])); openCtx(x,y); try{ navigator.vibrate&&navigator.vibrate(20); }catch(z){} },550);
         document.addEventListener('pointermove',mv); document.addEventListener('pointerup',cancel); document.addEventListener('pointercancel',cancel); }
     },true);
-    function startDrag(e,mode){ const n=selEl(); if(!n) return; e.preventDefault(); e.stopPropagation(); const p=getP(sel), r=n.getBoundingClientRect(), it=itemOf(sel);
+    function startDrag(e,mode){ const n=selEl(); if(!n) return; e.preventDefault(); e.stopPropagation(); rebase(); const p=getP(sel), r=n.getBoundingClientRect(), it=itemOf(sel);
       drag={mode,x:e.clientX,y:e.clientY,tx:it?it.x:(+p.tx||0),ty:it?it.y:(+p.ty||0),w:r.width,h:r.height,blk:n.closest('.blk'),moved:false,idx:null};
       const mv=ev=>{ ev.preventDefault(); const dx=ev.clientX-drag.x, dy=ev.clientY-drag.y; if(!drag.moved&&Math.hypot(dx,dy)<4) return; drag.moved=true; moved=true; hideCtx();
         if(mode==='move'){ drag.cx=drag.tx+dx; drag.cy=drag.ty+dy; if(it){ n.style.left=drag.cx+'px'; n.style.top=drag.cy+'px'; } else n.style.transform=tf(sel,drag.cx,drag.cy); drawSel(); }
@@ -1137,11 +1148,12 @@ html.night .dvItem.text{color:#eee}
     function fillPick(){ const P=$('dvPick'); P.innerHTML='<option value="">– válassz –</option>'; EDIT.forEach(e=>{ const o=document.createElement('option'); o.value=e[0]; o.textContent=e[2]; P.appendChild(o); }); P.value=sel||''; }
     function itemVisible(it){ const v=it.view||'all'; if(v==='all'||v==='splash') return true; if(v==='idle') return !$('idle').hidden; if(v==='res') return !$('res').hidden; return true; }
     function renderItems(){ const L=$('devItems'), S=$('devItemsSp'); L.innerHTML=''; S.innerHTML='';
-      dev.items.forEach(it=>{ const d=document.createElement('div'); d.className='dvItem '+it.type; d.dataset.item=it.id; d.style.left=it.x+'px'; d.style.top=it.y+'px'; if(it.w) d.style.width=it.w+'px'; if(it.h) d.style.height=it.h+'px';
+      const F=scaleF();
+      dev.items.forEach(it=>{ const d=document.createElement('div'); d.className='dvItem '+it.type; d.dataset.item=it.id; d.style.left=Math.round(it.x*F)+'px'; d.style.top=Math.round(it.y*F)+'px'; if(it.w) d.style.width=Math.round(it.w*F)+'px'; if(it.h) d.style.height=Math.round(it.h*F)+'px'; if(it.type==='text') d.style.fontSize=(1.1*F)+'rem';
         if(it.type==='img'){ const im=document.createElement('img'); im.src=it.src||''; im.alt=''; im.draggable=false; d.appendChild(im); } else if(it.type==='text') d.textContent=it.text||'Szöveg';
         d.hidden=!itemVisible(it); ((it.view||'all')==='splash'?S:L).appendChild(d); }); }
     function syncItemVis(){ dev.items.forEach(it=>{ const d=document.querySelector('[data-item="'+it.id+'"]'); if(d) d.hidden=!itemVisible(it); }); }
-    function addItem(type,src){ const id=dev.items.reduce((m,i)=>Math.max(m,i.id),0)+1; const it={id,type,x:40,y:140,view:'all'}; if(type==='img'){ it.src=src; it.w=160; it.h=120; } if(type==='text') it.text='Új szöveg'; if(type==='box'){ it.w=220; it.h=80; }
+    function addItem(type,src){ rebase(); const id=dev.items.reduce((m,i)=>Math.max(m,i.id),0)+1; const it={id,type,x:40,y:140,view:'all'}; if(type==='img'){ it.src=src; it.w=160; it.h=120; } if(type==='text') it.text='Új szöveg'; if(type==='box'){ it.w=220; it.h=80; }
       if(!$('splash').hidden&&!$('splash').classList.contains('out')) it.view='splash'; dev.items.push(it); registerItems(); renderItems(); apply(); save(); select(itemKey(it)); }
     function delItem(k){ const it=itemOf(k); if(!it) return; dev.items=dev.items.filter(i=>i!==it); if(sel===k) sel=null; delete dev.el[k]; if(dev.eln) delete dev.eln[k]; registerItems(); renderItems(); apply(); save(); drawSel(); }
     let fileCb=null; $('devFile').addEventListener('change',()=>{ const f=$('devFile').files[0]; $('devFile').value=''; if(f&&fileCb) readImg(f,900,fileCb); fileCb=null; });
@@ -1158,7 +1170,7 @@ html.night .dvItem.text{color:#eee}
     /* ---- element tab ---- */
     function elStore(){ if(nightActive()){ dev.eln=dev.eln||{}; return dev.eln; } return dev.el; }
     function getP(k){ const S=elStore(); return S[k]||(S[k]={}); }
-    function setP(k,n,v){ const S=elStore(), p=getP(k); if(v===''||v==null||v===false) delete p[n]; else p[n]=v; if(!Object.keys(p).length) delete S[k]; apply(); save(); }
+    function setP(k,n,v){ rebase(); const S=elStore(), p=getP(k); if(v===''||v==null||v===false) delete p[n]; else p[n]=v; if(!Object.keys(p).length) delete S[k]; apply(); save(); }
     const nmark=()=>nightActive()?'🌙 ':'';
     function hex(v){ return normHex(v)||''; }
     function fillEl(){ const row=$('dvTextRow'); if(!sel){ row.hidden=true; return; } const e=byKey(sel), p=elStore()[sel]||{};
@@ -1293,7 +1305,7 @@ html.night .dvItem.text{color:#eee}
       document.documentElement.style.setProperty('--devh',SIZES[dev.size||1]); $('devBar').hidden=false; $('devNight').classList.toggle('on',nightActive()); setEdit(dev.edit!==false); openPanel(!!dev.open); }
     $('devOpen').addEventListener('click',()=>{ if($('pinInput').value.trim()!==(cfg.pin||'0000')){ $('pinMsg').textContent='Hibás PIN-kód.'; return; } $('pinInput').value=''; closeSheets(); dev.open=true; start(); save(); });
 
-    apply();
+    apply(); let rsT=null; addEventListener('resize',()=>{ clearTimeout(rsT); rsT=setTimeout(apply,150); });
     if(/[?&]dev\b/.test(location.search)||dev.on){ setTimeout(start,0); }
     return {capturing,apply};
   })();
