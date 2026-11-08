@@ -698,7 +698,7 @@ html.night .dvItem.text{color:#eee}
     if(matchMedia('(display-mode: standalone)').matches){ hint.textContent='Már telepítve van, ez az alkalmazás-nézet.'; return; }
     hint.textContent=location.protocol==='https:'?'Chrome: ⋮ menü → „Hozzáadás a kezdőképernyőhöz” (vagy „Alkalmazás telepítése”). iPhone Safari: Megosztás → „Főképernyőhöz adás”.':'Telepíteni csak a https-es webcímről lehet, fájlból nem. Nyisd meg az online címet.'; });
   if(location.protocol==='https:'&&!/claude\.ai|claudeusercontent/.test(location.host)) $('instPage').hidden=false;
-  if('serviceWorker' in navigator&&location.protocol==='https:'){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+  if('serviceWorker' in navigator&&location.protocol==='https:'){ navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{ r.update().catch(()=>{}); let had=!!navigator.serviceWorker.controller; navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(had) location.reload(); had=true; }); }).catch(()=>{}); }
 
   /* decoder */
   let native=null, zx=null;
