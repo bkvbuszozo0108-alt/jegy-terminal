@@ -126,6 +126,96 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 .spBar{width:min(60%,240px);height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden;margin-top:10px}
 .spBar i{display:block;height:100%;width:0;background:var(--frame);transition:width 1.4s ease-out}
 .spFoot{position:absolute;bottom:calc(20px + env(safe-area-inset-bottom,0px));font-size:.7rem;opacity:.6;letter-spacing:.06em;font-variant-numeric:tabular-nums}
+
+/* ===== NIGHT MODE ===== */
+html.night{--status:var(--n-status,#0b0b0f);--bar:var(--n-bar,#1a1a24);--btn:var(--n-btn,#2c2c3a);--page:var(--n-page,#121216);--card:var(--n-card,#1c1c22);--fg:var(--n-fg,#ececf1);--muted:var(--n-muted,#9a9aa6);--line:var(--n-line,#2c2c36);--ok:var(--n-ok,#1b5e20);--ok-dark:var(--n-ok-dark,#0f3d13);--bad:var(--n-bad,#8e1b1b);--bad-dark:var(--n-bad-dark,#5a1010);color-scheme:dark}
+html.night .brand img,html.night .brand .mark{background:#1c1c22;border-color:var(--line)}
+html.night .topbar input{background:#1c1c22;color:#eee}html.night .topbar input::placeholder{color:#888}
+html.night .sheet input,html.night .sheet textarea,html.night .colrow button,html.night .colrow input.hex,html.night .sheet select{background:#15151a;color:#eee;border-color:#333}
+html.night .sheet .btns button,html.night .sheet .btns label.fb,html.night .sheet .btns a.btn-link{background:#2a2a33;color:#eee}
+html.night .sheet .btns .primary{background:var(--bar)}
+html.night .app.ok .main,html.night .app.bad .main,html.night .app.ok .kv div span:first-child,html.night .app.bad .kv div span:first-child{color:#f3f3f3}
+html.night .app.ok .sec,html.night .app.bad .sec{color:rgba(255,255,255,.65)}
+html.night .app.ok .kv div,html.night .app.bad .kv div{border-bottom-color:rgba(255,255,255,.18)}
+html.night .big,html.night .app.bad .big{color:#fff;border-color:rgba(255,255,255,.35)}html.night .link{color:rgba(255,255,255,.75)}
+html.night .app.ok .topbar .tb,html.night .app.bad .topbar .tb{color:#fff}
+html.night .scanstate{color:#c3b3e6}html.night .scanstate .dot{background:#c3b3e6}
+html.night .modesw{border-color:#6a5a8a}html.night .modesw button{color:#c3b3e6}html.night .modehint{color:#c3b3e6;border-color:#6a5a8a}
+html.night .kv div span:last-child{color:#f3f3f3}
+#dim{position:fixed;inset:0;z-index:50;background:#000;pointer-events:none;opacity:0;transition:opacity .4s}
+
+/* ===== DEV MODE – visual editor ===== */
+:root{--devh:48vh}
+body.dev .app{height:calc(100% - var(--devh))}
+#devPanel{position:fixed;left:0;right:0;bottom:0;height:var(--devh);z-index:60;background:#14161a;color:#e6e6e6;font-family:var(--font);font-size:.85rem;display:flex;flex-direction:column;box-shadow:0 -4px 20px rgba(0,0,0,.45)}
+@media (min-width:980px){ body.dev{--devh:0px} body.dev .app{height:100%;margin-left:max(0px,calc((100vw - 440px - 560px)/2))} #devPanel{left:auto;top:0;width:440px;height:100%} }
+#devPanel[hidden]{display:none!important}
+.dvHead{display:flex;align-items:center;gap:6px;padding:6px 8px;background:#1f2329;border-bottom:1px solid #2c313a;flex:0 0 auto;flex-wrap:wrap}
+.dvHead b{font-size:.78rem;letter-spacing:.12em;color:#ffb300;margin-right:auto}
+.dvTabs{display:flex;overflow-x:auto;background:#1a1d22;flex:0 0 auto;border-bottom:1px solid #2c313a;scrollbar-width:none}
+.dvTabs button{flex:0 0 auto;background:transparent;border:0;color:#9aa4b0;padding:9px 11px;font:inherit;font-size:.78rem;font-weight:700;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.dvTabs button.on{color:#fff;border-bottom-color:#ffb300}
+.dvBody{flex:1;overflow:auto;padding:8px 10px 20px;display:flex;flex-direction:column;gap:8px}
+.dvTab{display:flex;flex-direction:column;gap:8px}.dvTab[hidden]{display:none}
+.dvRow{display:flex;align-items:flex-end;gap:6px;flex-wrap:wrap}
+.dvRow label{flex:1 1 44%;display:flex;flex-direction:column;gap:3px;font-size:.7rem;color:#9aa4b0;min-width:0}
+.dvRow label.w{flex-basis:100%}.dvRow label.n{flex-basis:28%}
+.dvRow label.ck{flex-direction:row;align-items:center;gap:8px;font-size:.8rem;color:#ddd}
+#devPanel input,#devPanel select,#devPanel textarea{font:inherit;font-size:.85rem;background:#0e1013;color:#eee;border:1px solid #333a44;border-radius:4px;padding:6px 7px;width:100%;min-width:0}
+#devPanel input[type=color]{padding:0;height:32px;width:44px;flex:0 0 auto;background:none;border:0}
+#devPanel input[type=range]{padding:0;height:24px}
+#devPanel input[type=checkbox]{width:auto}
+#devPanel textarea{font-family:ui-monospace,monospace;font-size:.76rem;min-height:110px;resize:vertical}
+.dvBtn{font:inherit;font-size:.78rem;font-weight:600;background:#2b313a;color:#eee;border:1px solid #3a414c;border-radius:4px;padding:7px 10px;cursor:pointer}
+.dvBtn.p{background:#ffb300;color:#111;border-color:#ffb300;font-weight:700}
+.dvBtn.d{background:#5a1d1d;border-color:#7a2a2a}
+.dvBtn.on{background:#ffb300;color:#111;border-color:#ffb300}
+.dvHint{font-size:.72rem;color:#8a97a3;line-height:1.45}
+.dvH{font-size:.68rem;text-transform:uppercase;letter-spacing:.12em;color:#ffb300;margin-top:4px}
+.dvCol{display:flex;align-items:center;gap:6px}
+.dvCol input.hx{width:9ch;flex:0 0 auto;font-family:ui-monospace,monospace;font-size:.78rem}
+.dvCol .dvBtn{padding:5px 8px;flex:0 0 auto}
+.dvList{display:flex;flex-direction:column;gap:4px}
+.dvList>div{display:flex;align-items:center;gap:4px;background:#1a1d22;border:1px solid #2c313a;border-radius:4px;padding:5px 6px 5px 10px}
+.dvList>div span{flex:1;font-size:.82rem}
+.dvList>div.off span{opacity:.4;text-decoration:line-through}
+.dvList .dvBtn{padding:4px 8px}
+.devSel{touch-action:none!important;user-select:none!important;-webkit-user-select:none!important}
+body.devedit .app *{-webkit-touch-callout:none}
+.dvBar{position:fixed;right:8px;top:8px;z-index:61;display:flex;gap:4px;font-family:var(--font)}
+.dvBar[hidden]{display:none}
+.dvBar button{font:inherit;font-weight:700;font-size:.72rem;letter-spacing:.06em;background:#1f2329;color:#eee;border:1px solid #3a414c;border-radius:16px;padding:6px 10px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.4)}
+.dvBar button.on{background:#ffb300;color:#111;border-color:#ffb300}
+.dvSelBox{position:fixed;z-index:62;pointer-events:none;border:2px dashed #ffb300;box-shadow:0 0 0 1px rgba(0,0,0,.5);box-sizing:border-box}
+.dvSelBox[hidden]{display:none}
+.dvSelBox .lb{position:absolute;right:0;top:0;transform:translateY(-100%);background:#ffb300;color:#111;font-size:.62rem;font-weight:700;padding:2px 6px;border-radius:3px 3px 0 0;white-space:nowrap;pointer-events:auto;cursor:pointer;font-family:var(--font);max-width:60%;overflow:hidden;text-overflow:ellipsis;opacity:.92}
+.dvSelBox.low .lb{transform:none;border-radius:0 0 0 3px}
+.dvSelBox .rz{position:absolute;right:0;bottom:0;width:18px;height:18px;background:#ffb300;border:2px solid #111;border-radius:3px 0 0 0;pointer-events:auto;cursor:nwse-resize;touch-action:none}
+.dvSelBox .ord{position:absolute;left:0;top:0;width:20px;height:100%;max-height:38px;background:#ffb300;color:#111;border-radius:0 4px 4px 0;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.9rem;pointer-events:auto;cursor:grab;touch-action:none;letter-spacing:-2px;opacity:.9}
+.dvSelBox .ord[hidden]{display:none}
+.dvDropLine{position:fixed;z-index:62;height:3px;background:#ffb300;pointer-events:none;border-radius:2px}
+.dvDropLine[hidden]{display:none}
+#devCtx{position:fixed;z-index:63;background:#1f2329;color:#eee;border:1px solid #3a414c;border-radius:8px;padding:6px;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;width:248px;box-shadow:0 8px 28px rgba(0,0,0,.6);font-family:var(--font);font-size:.78rem}
+#devCtx[hidden]{display:none}
+#devCtx button,#devCtx label.cb{font:inherit;font-size:.78rem;font-weight:600;background:#2b313a;color:#eee;border:1px solid #3a414c;border-radius:5px;padding:7px 4px;cursor:pointer;text-align:center;position:relative;overflow:hidden;min-height:34px;display:flex;align-items:center;justify-content:center;gap:4px}
+#devCtx .w{grid-column:1/-1}#devCtx .h2{grid-column:span 2}
+#devCtx label.cb input[type=color]{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
+#devCtx label.cb i{width:14px;height:14px;border-radius:3px;border:1px solid #fff8;display:inline-block}
+#devCtx input.t{grid-column:1/-1;font:inherit;background:#0e1013;color:#eee;border:1px solid #333a44;border-radius:5px;padding:7px}
+#devCtx .nm{grid-column:1/-1;font-size:.66rem;color:#ffb300;letter-spacing:.08em;text-transform:uppercase;padding:2px 2px 0}
+#devCtx button.d{background:#5a1d1d;border-color:#7a2a2a}#devCtx button.p{background:#ffb300;color:#111;border-color:#ffb300}
+@media (min-width:980px){ body.dev .dvBar{right:448px} }
+#devItems,#devItemsSp{position:absolute;inset:0;pointer-events:none;z-index:5;overflow:visible}
+.dvItem{position:absolute;left:0;top:0;pointer-events:none;box-sizing:border-box}
+body.devedit .dvItem{pointer-events:auto;cursor:move}
+.dvItem img{display:block;width:100%;height:100%;object-fit:contain}
+.dvItem.text{font-weight:700;font-size:1.1rem;color:#111;padding:4px 8px;white-space:pre-wrap;line-height:1.25}
+html.night .dvItem.text{color:#eee}
+.dvItem.box{background:rgba(255,179,0,.45);border-radius:8px}
+.dvItem[hidden]{display:none}
+.dvLogo{display:flex;align-items:center;gap:8px}.dvLogo img{height:44px;max-width:120px;object-fit:contain;background:#fff;border-radius:6px;padding:3px}
+.dvTexts{display:flex;flex-direction:column;gap:6px}.dvTexts label{font-size:.7rem;color:#9aa4b0;display:flex;flex-direction:column;gap:2px}
+.dvGrid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 </style>
 
 <div class="app">
@@ -147,26 +237,38 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     </div>
 
     <div id="idle">
+      <div class="blk" data-blk="brand">
       <button type="button" class="brand" id="brandBtn" title="Menü">
         <img id="rLogo" alt="" hidden><span class="mark" id="rMark"><i></i></span>
         <span class="bt"><span class="rname" id="rName"></span><span class="scanstate" id="scanstate"><span class="dot"></span><span id="scanState" data-t="scanReady">SZKENNER AKTÍV</span></span></span>
       </button>
       <div class="scanerr" id="scanErr" hidden></div>
       <div class="modehint" id="modeHint" hidden></div>
+      </div>
+      <div class="blk" data-blk="device">
       <div class="sec" data-t="secDevice">Eszköz</div>
       <div class="kv" id="kvDevice"></div>
+      </div>
+      <div class="blk" data-blk="today">
       <div class="sec" data-t="secToday">Mai nap</div>
       <div class="kv" id="kvToday"></div>
+      </div>
+      <div class="blk" data-blk="last">
       <div class="sec" data-t="secLast">Utolsó</div>
       <div class="kv" id="kvLast"></div>
+      </div>
     </div>
 
     <div id="res" hidden>
+      <div class="blk" data-blk="result">
       <div class="sec" data-t="secResult">Eredmény</div>
       <div class="kv" id="kvResult"></div>
+      </div>
+      <div class="blk" data-blk="check">
       <div class="sec" data-t="secCheck">Ellenőrzés</div>
       <div class="kv" id="kvCheck"></div>
-      <div class="actwrap">
+      </div>
+      <div class="blk actwrap" data-blk="act">
         <button type="button" class="big" id="rMain">Következő</button>
         <button type="button" class="link" id="rSec" hidden>Mégis beengedés</button>
       </div>
@@ -193,6 +295,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <div class="btns">
       <button type="button" id="mLog">Napló / teszt / telepítés</button>
       <button type="button" id="mSet">Beállítások</button>
+      <button type="button" id="mNight">🌙 Éjszakai mód</button>
       <button type="button" id="mPreview">Kamera előnézet</button>
       <button type="button" id="mSwitch">Kamera váltás</button>
       <button type="button" id="mZoom">Nagyítás: 1×</button>
@@ -218,7 +321,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <div class="log" id="noteLog"></div>
     <div class="sys">
       <div class="syshd" data-t="sysHd">Rendszer</div>
-      <div class="sysrow"><span data-t="sysApp">Alkalmazás</span><span data-t="sysAppVal">Belépőjegy terminál v2.4.1</span></div>
+      <div class="sysrow"><span data-t="sysApp">Alkalmazás</span><span data-t="sysAppVal">Belépőjegy terminál v2.5.0-dev</span></div>
       <div class="sysrow"><span data-t="sysTermL">Terminál</span><span id="sysTerm">T-0412</span></div>
       <div class="sysrow"><span data-t="sysInsp">Jegyellenőr</span><span id="sysId"></span></div>
       <div class="sysrow"><span data-t="sysStartL">Szolgálat kezdete</span><span id="sysStart"></span></div>
@@ -252,6 +355,10 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <label>Elutasító felirat (érvénytelen jegynél)<input id="sDeny" placeholder="Belépés nem engedélyezett"></label>
     <label>Felirat a szkenner alatt<input id="sCap" placeholder="Olvassa be a belépőjegy kódját"></label>
     <label style="flex-direction:row;align-items:center;gap:10px"><input type="checkbox" id="sPreview" style="width:auto"> Kamera előnézet mutatása (alap: rejtve, a szkenner a háttérben fut)</label>
+    <div class="syshd" style="margin:4px 0 0">Éjszakai mód</div>
+    <div class="btns" style="margin:0"><label style="flex:2">Mikor<select id="sNight" style="font:inherit;width:100%;border:1px solid var(--line);border-radius:4px;padding:10px;background:#fff;color:var(--fg)"><option value="off">Kikapcsolva</option><option value="on">Mindig</option><option value="auto">Időzítve</option><option value="system">Telefon sötét módja szerint</option></select></label><label style="flex:1">-tól<input id="sNightFrom" type="time"></label><label style="flex:1">-ig<input id="sNightTo" type="time"></label></div>
+    <label>Tompítás éjszaka (0–70 %, a kijelző fényét csökkenti)<input id="sDim" inputmode="numeric" placeholder="0"></label>
+    <label style="flex-direction:row;align-items:center;gap:10px"><input type="checkbox" id="sHw" style="width:auto"> Hardveres szkenner mód (Zebra DataWedge billentyűzet-mód) – kamera nélkül, a kód a felső mezőbe érkezik</label>
     <label>Indítóképernyő – név<input id="sSpTitle" placeholder="Jegyellenőr terminál"></label>
     <label>Indítóképernyő – alsó felirat<input id="sSpSub" placeholder="Rendszer betöltése…"></label>
     <label>Indítóképernyő hossza (másodperc)<input id="sSpSec" inputmode="decimal" placeholder="2"></label>
@@ -262,6 +369,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       <div class="syshd">Főnöki beállítások</div>
       <div class="dlhint">Minden felirat, gombszöveg és üzenet átírható. PIN-kóddal védett (alap: 0000).</div>
       <div class="btns" style="margin-top:8px"><input id="pinInput" inputmode="numeric" placeholder="PIN" style="flex:1 1 80px;font:inherit;border:1px solid var(--line);border-radius:8px;padding:10px"><button type="button" class="primary" id="bossOpen" style="flex:2 1 120px">Szövegek szerkesztése</button></div>
+      <div class="btns" style="margin-top:4px"><button type="button" id="devOpen" style="flex:1;background:#14161a;color:#ffb300">⚙ DEV MÓD – teljes szerkesztő (PIN)</button></div>
       <div class="dlhint" id="pinMsg"></div>
     </div>
   </div>
@@ -279,6 +387,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <div class="btns"><button type="button" data-close>Mégse</button><button type="button" id="bossReset">Alapértelmezett szövegek</button><button type="button" class="primary" id="bossSave">Mentés</button></div>
   </div>
 
+  <div id="devItems"></div>
   <div class="splash" id="splash">
     <img id="spLogo" alt="" hidden>
     <div class="spMark" id="spMark"><i></i></div>
@@ -286,8 +395,194 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <div class="spSub" id="spSub">Rendszer betöltése…</div>
     <div class="spBar"><i id="spFill"></i></div>
     <div class="spFoot" id="spFoot"></div>
+    <div id="devItemsSp"></div>
   </div>
 
+</div>
+
+<div id="dim"></div>
+<div class="dvBar" id="devBar" hidden>
+  <button type="button" id="devEdit" class="on" title="Szerkesztés be/ki">✎ SZERK.</button>
+  <button type="button" id="devAdd" title="Beszúrás: kép, szöveg, doboz">＋</button>
+  <button type="button" id="devView" title="Nézet váltása: készenlét / érvényes / érvénytelen / indítókép">▶ NÉZET</button>
+  <button type="button" id="devNight" title="Éjszakai mód be/ki">🌙</button>
+  <button type="button" id="devPanelBtn" title="Minden beállítás">⚙</button>
+</div>
+<div class="dvSelBox" id="devSelBox" hidden><span class="lb" id="devSelLb">elem</span><span class="ord" id="devOrdH" hidden>⋮⋮</span><span class="rz" id="devRzH"></span></div>
+<div class="dvDropLine" id="devDrop" hidden></div>
+<input type="file" id="devFile" accept="image/*" hidden>
+<div id="devCtx" hidden></div>
+<div id="devPanel" hidden>
+  <div class="dvHead">
+    <b>DEV MÓD</b>
+    <button type="button" class="dvBtn" data-pv="idle">Készenlét</button>
+    <button type="button" class="dvBtn" data-pv="ok">Érvényes</button>
+    <button type="button" class="dvBtn" data-pv="bad">Érvénytelen</button>
+    <button type="button" class="dvBtn" data-pv="splash">Indítókép</button>
+    <button type="button" class="dvBtn" id="devSize" title="Panel mérete">◪</button>
+    <button type="button" class="dvBtn" id="devHide" title="Panel elrejtése – az app tesztelhető">▼</button>
+  </div>
+  <div class="dvTabs">
+    <button type="button" class="on" data-tab="el">Elem</button>
+    <button type="button" data-tab="lay">Elrendezés</button>
+    <button type="button" data-tab="sp">Indítókép</button>
+    <button type="button" data-tab="logo">Logók</button>
+    <button type="button" data-tab="col">Színek</button>
+    <button type="button" data-tab="tx">Szövegek</button>
+    <button type="button" data-tab="css">CSS</button>
+    <button type="button" data-tab="exp">Mentés</button>
+  </div>
+  <div class="dvBody">
+
+    <div class="dvTab" id="dvt-el">
+      <div class="dvHint">Az appban: <b>koppintás</b> = kijelöl, <b>húzás</b> = mozgat, <b>sarok</b> = méretez, <b>⋮⋮</b> = blokk sorrend, <b>jobb klikk / hosszú nyomás</b> = gyorsmenü. Itt a finomhangolás.</div>
+      <div class="dvRow"><label class="w">Kiválasztott elem<select id="dvPick"></select></label></div>
+      <div class="dvRow" id="dvTextRow" hidden><label class="w">Szöveg<input id="dvText"></label></div>
+      <div class="dvRow">
+        <label>Háttér<span class="dvCol"><input type="color" id="dvc_bg"><input class="hx" id="dvh_bg" placeholder="—"><button type="button" class="dvBtn" data-clr="bg">✕</button></span></label>
+        <label>Szöveg szín<span class="dvCol"><input type="color" id="dvc_fg"><input class="hx" id="dvh_fg" placeholder="—"><button type="button" class="dvBtn" data-clr="fg">✕</button></span></label>
+      </div>
+      <div class="dvRow">
+        <label class="n">Betűméret px<input type="number" id="dvp_fs" min="6" max="96" placeholder="alap"></label>
+        <label class="n">Vastagság<select id="dvp_fw"><option value="">alap</option><option>300</option><option>400</option><option>500</option><option>700</option><option>900</option></select></label>
+        <label class="n">Igazítás<select id="dvp_align"><option value="">alap</option><option value="left">balra</option><option value="center">közép</option><option value="right">jobbra</option></select></label>
+      </div>
+      <div class="dvRow">
+        <label class="n">Nagybetű<select id="dvp_tr"><option value="">alap</option><option value="none">nincs</option><option value="uppercase">NAGY</option><option value="capitalize">Kezdő</option></select></label>
+        <label class="n">Betűköz<input id="dvp_ls" placeholder=".1em"></label>
+        <label class="n">Lekerekítés px<input type="number" id="dvp_rad" min="0" max="80" placeholder="alap"></label>
+      </div>
+      <div class="dvRow">
+        <label>Belső margó<input id="dvp_pad" placeholder="pl. 8px 12px"></label>
+        <label>Külső margó<input id="dvp_mar" placeholder="pl. 0 0 10px"></label>
+      </div>
+      <div class="dvRow">
+        <label>Szélesség<input id="dvp_w" placeholder="pl. 80px / 100%"></label>
+        <label>Magasság<input id="dvp_h" placeholder="pl. 80px"></label>
+      </div>
+      <div class="dvRow">
+        <label>Keret<input id="dvp_bd" placeholder="pl. 2px solid #fff"></label>
+        <label>Árnyék<input id="dvp_sh" placeholder="pl. 0 2px 8px #0004"></label>
+      </div>
+      <div class="dvRow">
+        <label>Betűtípus<input id="dvp_ff" placeholder="pl. Georgia, serif"></label>
+        <label class="n">Átlátszóság %<input type="number" id="dvp_op" min="0" max="100" placeholder="100"></label>
+      </div>
+      <div class="dvH">Belső elrendezés (ha az elem több részből áll)</div>
+      <div class="dvRow">
+        <label class="n">Irány<select id="dvp_fd"><option value="">alap</option><option value="row">sorban</option><option value="row-reverse">sorban fordítva</option><option value="column">oszlopban</option><option value="column-reverse">oszlop fordítva</option></select></label>
+        <label class="n">Elosztás<select id="dvp_jc"><option value="">alap</option><option value="flex-start">elejére</option><option value="center">közép</option><option value="flex-end">végére</option><option value="space-between">széthúzva</option></select></label>
+        <label class="n">Igazítás ⟂<select id="dvp_ai"><option value="">alap</option><option value="flex-start">elejére</option><option value="center">közép</option><option value="flex-end">végére</option><option value="stretch">nyújtva</option></select></label>
+      </div>
+      <div class="dvRow">
+        <label class="n">Térköz<input id="dvp_gap" placeholder="pl. 12px"></label>
+        <label class="n">Eltolás X px<input type="number" id="dvp_tx" placeholder="0"></label>
+        <label class="n">Eltolás Y px<input type="number" id="dvp_ty" placeholder="0"></label>
+        <label class="ck"><input type="checkbox" id="dvp_hide"> Elem elrejtése</label>
+      </div>
+      <div class="dvRow"><button type="button" class="dvBtn d" id="dvElReset">Ez az elem alaphelyzetbe</button></div>
+    </div>
+
+    <div class="dvTab" id="dvt-lay" hidden>
+      <div class="dvH">Készenléti képernyő blokkjai</div>
+      <div class="dvList" id="dvOrderIdle"></div>
+      <div class="dvH">Eredmény képernyő blokkjai</div>
+      <div class="dvList" id="dvOrderRes"></div>
+      <div class="dvH">Elhelyezés</div>
+      <div class="dvRow">
+        <label>Felső sáv (óra + beviteli mező)<select id="dvTopPos"><option value="top">felül</option><option value="bottom">alul</option></select></label>
+        <label>Kamera doboz<select id="dvCamPos"><option value="top">a blokkok fölött</option><option value="bottom">a blokkok alatt</option><option value="hidden">rejtve</option></select></label>
+      </div>
+      <div class="dvRow">
+        <label>App max. szélesség px<input type="number" id="dvAppW" placeholder="560"></label>
+        <label>Alap lekerekítés px (gombok, dobozok)<input type="number" id="dvRad" placeholder="alap"></label>
+      </div>
+      <div class="dvRow">
+        <label class="w">Betűtípus (egész app)<select id="dvFont"><option value="">Roboto (alap)</option><option value="system-ui,sans-serif">Rendszer</option><option value="Arial,Helvetica,sans-serif">Arial</option><option value="'Segoe UI',sans-serif">Segoe UI</option><option value="Georgia,serif">Georgia</option><option value="'Courier New',monospace">Courier (írógép)</option><option value="custom">Egyéni…</option></select></label>
+        <label class="w" id="dvFontCRow" hidden>Egyéni betűtípus neve<input id="dvFontC" placeholder="pl. 'Montserrat', sans-serif"></label>
+      </div>
+      <div class="dvHint">Az egyes elemek finomhangolása (margó, méret, igazítás) az <b>Elem</b> fülön történik.</div>
+    </div>
+
+    <div class="dvTab" id="dvt-sp" hidden>
+      <div class="dvRow"><button type="button" class="dvBtn p" id="dvSpShow">Indítókép mutatása</button><button type="button" class="dvBtn" id="dvSpHide">Elrejtés</button></div>
+      <div class="dvRow">
+        <label>Háttérszín<span class="dvCol"><input type="color" id="dvc_spbg"><input class="hx" id="dvh_spbg"><button type="button" class="dvBtn" data-clr="spbg">✕</button></span></label>
+        <label>Átmenet 2. szín (üres = egyszínű)<span class="dvCol"><input type="color" id="dvc_spgrad"><input class="hx" id="dvh_spgrad"><button type="button" class="dvBtn" data-clr="spgrad">✕</button></span></label>
+      </div>
+      <div class="dvRow">
+        <label>Szöveg szín<span class="dvCol"><input type="color" id="dvc_spfg"><input class="hx" id="dvh_spfg"><button type="button" class="dvBtn" data-clr="spfg">✕</button></span></label>
+        <label>Csík színe<span class="dvCol"><input type="color" id="dvc_spbar"><input class="hx" id="dvh_spbar"><button type="button" class="dvBtn" data-clr="spbar">✕</button></span></label>
+      </div>
+      <div class="dvRow">
+        <label class="w">Cím<input id="dvSpTitle" placeholder="Jegyellenőr terminál"></label>
+        <label class="w">Alcím<input id="dvSpSub" placeholder="Rendszer betöltése…"></label>
+        <label class="w">Lábléc (üres = terminál · ellenőr)<input id="dvSpFoot"></label>
+      </div>
+      <div class="dvRow">
+        <label class="n">Hossz (mp)<input type="number" id="dvSpSec" min="0" max="15" step="0.5"></label>
+        <label class="n">Logó méret px<input type="number" id="dvSpLogoW" min="40" max="400" placeholder="120"></label>
+        <label class="n">Logó lekerekítés<input type="number" id="dvSpLogoR" min="0" max="200" placeholder="18"></label>
+      </div>
+      <div class="dvRow">
+        <label class="ck"><input type="checkbox" id="dvSpLogoT"> Logó háttere átlátszó</label>
+        <label class="ck"><input type="checkbox" id="dvSpNoBar"> Csík elrejtése</label>
+        <label class="ck"><input type="checkbox" id="dvSpNoFoot"> Lábléc elrejtése</label>
+      </div>
+      <div class="dvH">Indítókép saját logója (ha üres, a fejléc logója)</div>
+      <div class="dvLogo"><img id="dvSpLogoPrev" alt="" hidden><label class="dvBtn">Feltöltés<input type="file" id="dvSpLogoFile" accept="image/*" style="display:none"></label><button type="button" class="dvBtn d" id="dvSpLogoDel">Törlés</button></div>
+      <div class="dvHint">A cím, alcím és a többi elem finomhangolása (betűméret stb.) az Elem fülön: „Indítókép cím / alcím / lábléc”.</div>
+    </div>
+
+    <div class="dvTab" id="dvt-logo" hidden>
+      <div class="dvH">Fejléc logó</div>
+      <div class="dvLogo"><img id="dvLogoPrev" alt="" hidden><label class="dvBtn">Feltöltés<input type="file" id="dvLogoFile" accept="image/*" style="display:none"></label><button type="button" class="dvBtn d" id="dvLogoDel">Törlés</button></div>
+      <div class="dvRow">
+        <label class="n">Méret px<input type="number" id="dvLogoW" min="24" max="300" placeholder="64"></label>
+        <label class="n">Lekerekítés<input type="number" id="dvLogoR" min="0" max="150" placeholder="12"></label>
+        <label class="n">Háttér<span class="dvCol"><input type="color" id="dvc_logobg"><button type="button" class="dvBtn" data-clr="logobg">✕</button></span></label>
+      </div>
+      <div class="dvRow">
+        <label>Logó helye<select id="dvLogoPos"><option value="">balra (alap)</option><option value="row-reverse">jobbra</option><option value="column">középen, név alatta</option></select></label>
+        <label class="ck"><input type="checkbox" id="dvLogoHide"> Logó elrejtése</label>
+      </div>
+      <div class="dvH">Alkalmazás ikon (kezdőképernyő)</div>
+      <div class="dvLogo"><img id="dvIconPrev" alt="" style="border-radius:10px"><label class="dvBtn">Feltöltés<input type="file" id="dvIconFile" accept="image/*" style="display:none"></label><button type="button" class="dvBtn d" id="dvIconDel">Alap</button></div>
+      <div class="dvRow"><label class="w">App neve az ikon alatt<input id="dvAppName" placeholder="Jegyellenőr"></label></div>
+      <div class="dvHint">Az ikon és a név a kezdőképernyőre tételkor rögzül – módosítás után add hozzá újra.</div>
+    </div>
+
+    <div class="dvTab" id="dvt-col" hidden>
+      <div class="dvHint">Az app alap színcsomagja (nappali + éjszakai). Egyes elemek egyedi színe az Elem fülön felülírja ezeket. Éjszakai mód: Beállítások → Éjszakai mód (kézi / időzített / rendszer).</div>
+      <div class="dvGrid2" id="dvCols"></div>
+      <div class="dvRow"><button type="button" class="dvBtn d" id="dvColReset">Alapszínek</button></div>
+      <div class="dvH">Gyors témák</div>
+      <div class="dvRow" id="dvThemes"></div>
+    </div>
+
+    <div class="dvTab" id="dvt-tx" hidden>
+      <div class="dvRow"><label class="w">Keresés<input id="dvTxFind" placeholder="szűrés…"></label></div>
+      <div class="dvTexts" id="dvTexts"></div>
+      <div class="dvRow"><button type="button" class="dvBtn d" id="dvTxReset">Minden szöveg alaphelyzetbe</button></div>
+    </div>
+
+    <div class="dvTab" id="dvt-css" hidden>
+      <div class="dvHint">Saját CSS – bármit felülírhatsz. Azonosítók: <code>#top #main #cam #brandBtn #rName #kvDevice #kvToday #kvLast #kvResult #kvCheck #rMain #rSec #splash #spTitle #spSub</code>, osztályok: <code>.sec .kv .statusbar .topbar .blk .sheet</code>. Állapotok: <code>.app.ok</code> / <code>.app.bad</code>.</div>
+      <textarea id="dvCss" spellcheck="false" placeholder="#rName{ text-shadow:0 1px 2px #0006 }&#10;.app.ok .main{ background:linear-gradient(#2e7d32,#1b5e20) }"></textarea>
+      <div class="dvH">Generált CSS (csak olvasható)</div>
+      <textarea id="dvCssGen" readonly style="min-height:70px;opacity:.7"></textarea>
+    </div>
+
+    <div class="dvTab" id="dvt-exp" hidden>
+      <div class="dvHint">Minden dev-beállítás automatikusan mentődik ebbe a böngészőbe. Innen átviheted másik eszközre, vagy beépítheted a letölthető fájlba.</div>
+      <div class="dvRow"><button type="button" class="dvBtn p" id="dvExpCopy">Konfig másolása</button><button type="button" class="dvBtn" id="dvExpLoad">Beillesztett konfig betöltése</button></div>
+      <textarea id="dvExp" spellcheck="false"></textarea>
+      <div class="dvRow"><button type="button" class="dvBtn p" id="dvDl">Teljes app mentése fájlba (beállításokkal együtt)</button></div>
+      <div class="dvRow"><button type="button" class="dvBtn" id="dvExit">Kilépés a dev módból (beállítások maradnak)</button><button type="button" class="dvBtn d" id="dvReset">Dev-beállítások törlése</button></div>
+      <div class="dvHint">Dev mód újra: Beállítások → DEV MÓD (PIN), vagy a cím végére: <code>?dev</code></div>
+    </div>
+
+  </div>
 </div>
 
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
@@ -324,7 +619,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     emptyList:['Üres lista szövege','Még nincs beolvasás. Tartsa a jegy kódját a keretbe.'],
     manualTitle:['Kézi bevitel – cím','Kézi bevitel'], manualLabel:['Kézi bevitel – mező','Jegy kódja / sorszáma'], manualOk:['Kézi bevitel – gomb','Ellenőriz'], cancel:['Mégse gomb','Mégse'], close:['Bezár gomb','Bezár'],
     logTitle:['Napló – cím','Napló'], noteLabel:['Napló – új bejegyzés','Új bejegyzés'], noteSave:['Napló – rögzítés gomb','Rögzítés'], clearBtn:['Törlés gomb','Beolvasások és napló törlése'], instBtn:['Telepítés gomb','⤓ Telepítés a kezdőképernyőre'],
-    sysHd:['Rendszer panel – cím','Rendszer'], sysApp:['Rendszer – alkalmazás','Alkalmazás'], sysAppVal:['Rendszer – alkalmazás neve/verzió','Belépőjegy terminál v2.4.1'], sysTermL:['Rendszer – terminál','Terminál'], sysInsp:['Rendszer – ellenőr','Jegyellenőr'], sysStartL:['Rendszer – szolgálat kezdete','Szolgálat kezdete'], sysCountL:['Rendszer – számláló','Beengedve / elutasítva'],
+    sysHd:['Rendszer panel – cím','Rendszer'], sysApp:['Rendszer – alkalmazás','Alkalmazás'], sysAppVal:['Rendszer – alkalmazás neve/verzió','Belépőjegy terminál v2.5.0-dev'], sysTermL:['Rendszer – terminál','Terminál'], sysInsp:['Rendszer – ellenőr','Jegyellenőr'], sysStartL:['Rendszer – szolgálat kezdete','Szolgálat kezdete'], sysCountL:['Rendszer – számláló','Beengedve / elutasítva'],
     resTitle:['Eredmény – fejléc','Ellenőrzés eredménye'], codeLabel:['Eredmény – jegykód felirat','Jegykód:'], txn:['Eredmény – tranzakció felirat','Tranzakció'], validityLabel:['Eredmény – érvényesség felirat','Érvényesség:'],
     vValid:['Ítélet: érvényes','ÉRVÉNYES'], vInvalid:['Ítélet: érvénytelen','ÉRVÉNYTELEN'], vExpired:['Ítélet: lejárt','LEJÁRT'], vUsed:['Ítélet: már felhasznált','MÁR FELHASZNÁLT'],
     whyFlag:['Indok: érvénytelenként jelölt','A jegy érvénytelenként van megjelölve'], whyNotYet:['Indok: még nem érvényes','A jegy még nem érvényes'], whyExpired:['Indok: lejárt (dátum elé)','A jegy érvényessége lejárt:'], whyUsed:['Indok: felhasznált (idő elé)','Ezzel a jeggyel már beléptek:'],
@@ -335,7 +630,18 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     camStart:['Kamera: indítás','Kamera indítása…'], camStopped:['Kamera: leállítva','Kamera leállítva.'], camNoPerm:['Kamera: nincs engedély','Nincs kameraengedély. Chrome: a címsor lakat ikonja → Engedélyek → Kamera: engedélyez, majd frissíts. Vagy használd a ➜ gombot.'], camFail:['Kamera: hiba','A kamera nem indult el. Használd a ➜ gombot.'], noCode:['Nincs kód a képen','Nem található kód a képen'] };
   const tx=k=>(cfg.tx&&cfg.tx[k])||TX[k][1];
   const COL={status:['Indítóképernyő háttér','#4a148c'],bar:['Felső sáv (készenlét)','#6a1b9a'],btn:['Bevitel gomb','#8e44ad'],page:['Háttér (készenlét)','#ffffff'],muted:['Címkék szürke','#555555'],line:['Elválasztó vonalak','#d9d9d9'],ok:['ÉRVÉNYES háttér','#2e7d32'],'ok-dark':['ÉRVÉNYES gomb','#1b5e20'],bad:['ÉRVÉNYTELEN háttér','#c62828'],'bad-dark':['ÉRVÉNYTELEN gomb','#8e1b1b'],frame:['Kamera keret','#69f0ae'],laser:['Lézervonal','#ff3b30']};
-  function applyColors(){ const r=document.documentElement.style; for(const k in COL){ const v=cfg.colors&&cfg.colors[k]; if(v) r.setProperty('--'+k,v); else r.removeProperty('--'+k); } const th=document.querySelector('meta[name=theme-color]'); if(th) th.content=(cfg.colors&&cfg.colors.status)||COL.status[1]; }
+  const NCOL={'n-status':['Éjszaka: indítókép / állapotsor','#0b0b0f'],'n-bar':['Éjszaka: felső sáv','#1a1a24'],'n-btn':['Éjszaka: bevitel gomb','#2c2c3a'],'n-page':['Éjszaka: háttér','#121216'],'n-card':['Éjszaka: felugró lapok','#1c1c22'],'n-fg':['Éjszaka: szöveg','#ececf1'],'n-muted':['Éjszaka: címkék','#9a9aa6'],'n-line':['Éjszaka: vonalak','#2c2c36'],'n-ok':['Éjszaka: ÉRVÉNYES háttér','#1b5e20'],'n-ok-dark':['Éjszaka: ÉRVÉNYES gomb','#0f3d13'],'n-bad':['Éjszaka: ÉRVÉNYTELEN háttér','#8e1b1b'],'n-bad-dark':['Éjszaka: ÉRVÉNYTELEN gomb','#5a1010']};
+  function applyColors(){ const r=document.documentElement.style; for(const k in COL){ const v=cfg.colors&&cfg.colors[k]; if(v) r.setProperty('--'+k,v); else r.removeProperty('--'+k); }
+    for(const k in NCOL){ const v=cfg.ncolors&&cfg.ncolors[k]; if(v) r.setProperty('--'+k,v); else r.removeProperty('--'+k); }
+    const th=document.querySelector('meta[name=theme-color]'); if(th) th.content=(cfg.colors&&cfg.colors.status)||COL.status[1]; applyNight(); }
+  /* night mode: off | on | auto (time window) | system */
+  function nightActive(){ const m=cfg.night||'off'; if(m==='on') return true; if(m==='off') return false; if(m==='system') return matchMedia('(prefers-color-scheme: dark)').matches;
+    const now=new Date(), cur=now.getHours()*60+now.getMinutes(); const p=s=>{ const x=/^(\d{1,2}):(\d{2})/.exec(s||''); return x?(+x[1])*60+(+x[2]):null; }; const f=p(cfg.nightFrom), t=p(cfg.nightTo); const F=f==null?20*60:f, T=t==null?6*60:t; return F<=T?(cur>=F&&cur<T):(cur>=F||cur<T); }
+  function applyNight(){ const on=nightActive(); document.documentElement.classList.toggle('night',on); const d=$('dim'); if(d) d.style.opacity=on?Math.min(.7,Math.max(0,(parseInt(cfg.dim,10)||0)/100)):0;
+    const b=$('mNight'); if(b) b.textContent=(on?'☀️ Nappali módra':'🌙 Éjszakai módra')+(cfg.night==='auto'?' · időzítve':cfg.night==='system'?' · rendszer':'');
+    const th=document.querySelector('meta[name=theme-color]'); if(th&&on) th.content=(cfg.ncolors&&cfg.ncolors['n-status'])||NCOL['n-status'][1]; }
+  function toggleNight(){ cfg.night=nightActive()?'off':'on'; store.set('cfg',cfg); applyNight(); }
+  setInterval(applyNight,30000); try{ matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyNight); }catch(e){}
   function applyTexts(){ document.querySelectorAll('[data-t]').forEach(el=>{ el.textContent=tx(el.getAttribute('data-t')); }); $('codeInput').placeholder=tx('codePh'); }
   const cfg=Object.assign({title:'Jegyellenőrzés',sub:'Beléptetési pont · Főbejárat',welcome:'Belépés engedélyezve. Jó szórakozást!',deny:'Belépés megtagadva',id:'E-0001',logo:'',cap:'Olvassa be a belépőjegy kódját',term:'T-0412',icon:'',pin:'0000',tx:{},colors:{},spTitle:'',spSub:'',spSec:2,preview:false,appName:'',shift:'',info1l:'Vonal',info1v:'',info2l:'Szakasz',info2v:'',fine:8000,mode:'jegy'},window.__PRESET||{},store.get('cfg',{}));
 
@@ -473,7 +779,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     try{ navigator.vibrate&&navigator.vibrate(v.ok?40:90); }catch(e){}
     beep(v.ok);
   }
-  function closeResult(){ document.querySelector('.app').className='app'; $('res').hidden=true; $('idle').hidden=false; $('codeInput').value=''; last=''; if(!running) startCamera(); }
+  function closeResult(){ document.querySelector('.app').className='app'; $('res').hidden=true; $('idle').hidden=false; $('codeInput').value=''; last=''; if(cfg.hwScan){ hwInit(); return; } if(!running) startCamera(); }
   $('rMain').addEventListener('click',()=>{ if(current&&!current.v.ok&&hist[0]){ hist[0].fine=true; store.set('hist',hist); const n=store.get('notes',[]); n.unshift({t:fmtFull(new Date()),x:'Pótdíj '+ftFine(cfg.fine)+' · '+(current.t.name?current.t.name+' · ':'')+shortCode(current.t.code)+' · '+cfg.id}); store.set('notes',n); renderRows(); } closeResult(); });
   $('rSec').addEventListener('click',()=>{ if(current&&!current.v.ok){ hist[0].let=true; const used=store.get('used',{}); used[current.t.code]=fmtFull(new Date()); store.set('used',used); store.set('hist',hist); const n=store.get('notes',[]); n.unshift({t:fmtFull(new Date()),x:'Kézi beengedés · '+(current.t.name?current.t.name+' · ':'')+shortCode(current.t.code)+' · '+cfg.id}); store.set('notes',n); renderRows(); } closeResult(); });
   $('navBack').addEventListener('click',closeResult);
@@ -573,7 +879,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   $('modeJegy').addEventListener('click',()=>setMode('jegy')); $('modeBerlet').addEventListener('click',()=>setMode('berlet'));
   applyMode();
   $('brandBtn').addEventListener('click',()=>{ $('menuTitle').textContent=cfg.title||'Menü'; openSheet('menuBox'); });
-  $('mLog').addEventListener('click',openLog); $('mSet').addEventListener('click',()=>$('navSet').click());
+  $('mLog').addEventListener('click',openLog); $('mSet').addEventListener('click',()=>$('navSet').click()); $('mNight').addEventListener('click',()=>{ toggleNight(); closeSheets(); });
   const ZOOMS=[1,1.5,2,3];
   function track(){ return stream&&stream.getVideoTracks()[0]; }
   async function applyZoom(){ const tr=track(); const caps=tr&&tr.getCapabilities?tr.getCapabilities():{}; const z=ZOOMS[zoomI];
@@ -598,7 +904,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 
   /* settings incl. logo upload (stored as a small data URL) */
   let pendingLogo=null;
-  $('navSet').addEventListener('click',()=>{ $('sTitle').value=cfg.title; $('sSub').value=cfg.sub; $('sWelcome').value=cfg.welcome; $('sDeny').value=cfg.deny; $('sId').value=cfg.id; $('sCap').value=cfg.cap; $('sTerm').value=cfg.term; $('sAppName').value=cfg.appName||''; $('sShift').value=cfg.shift||''; $('sI1l').value=cfg.info1l||''; $('sI1v').value=cfg.info1v||''; $('sI2l').value=cfg.info2l||''; $('sI2v').value=cfg.info2v||''; $('sFine').value=cfg.fine; $('sPreview').checked=!!cfg.preview; $('sSpTitle').value=cfg.spTitle||''; $('sSpSub').value=cfg.spSub||''; $('sSpSec').value=cfg.spSec;
+  $('navSet').addEventListener('click',()=>{ $('sTitle').value=cfg.title; $('sSub').value=cfg.sub; $('sWelcome').value=cfg.welcome; $('sDeny').value=cfg.deny; $('sId').value=cfg.id; $('sCap').value=cfg.cap; $('sTerm').value=cfg.term; $('sAppName').value=cfg.appName||''; $('sShift').value=cfg.shift||''; $('sI1l').value=cfg.info1l||''; $('sI1v').value=cfg.info1v||''; $('sI2l').value=cfg.info2l||''; $('sI2v').value=cfg.info2v||''; $('sFine').value=cfg.fine; $('sPreview').checked=!!cfg.preview; $('sHw').checked=!!cfg.hwScan; $('sNight').value=cfg.night||'off'; $('sNightFrom').value=cfg.nightFrom||'20:00'; $('sNightTo').value=cfg.nightTo||'06:00'; $('sDim').value=cfg.dim||''; $('sSpTitle').value=cfg.spTitle||''; $('sSpSub').value=cfg.spSub||''; $('sSpSec').value=cfg.spSec;
     pendingLogo=cfg.logo||null; $('sLogoPrev').hidden=!pendingLogo; if(pendingLogo) $('sLogoPrev').src=pendingLogo;
     pendingIcon=cfg.icon||null; $('sIconPrev').hidden=false; $('sIconPrev').src=pendingIcon||DEFAULT_ICON; openSheet('setBox'); });
   let pendingIcon=null;
@@ -612,7 +918,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       c.getContext('2d').drawImage(img,0,0,c.width,c.height); pendingLogo=c.toDataURL('image/png'); $('sLogoPrev').src=pendingLogo; $('sLogoPrev').hidden=false; URL.revokeObjectURL(url); $('sLogo').value=''; };
     img.src=url; });
   $('sLogoDel').addEventListener('click',()=>{ pendingLogo=null; $('sLogoPrev').hidden=true; });
-  $('setSave').addEventListener('click',()=>{ cfg.title=$('sTitle').value.trim()||'Jegyellenőrzés'; cfg.sub=$('sSub').value.trim(); cfg.welcome=$('sWelcome').value.trim(); cfg.deny=$('sDeny').value.trim(); cfg.id=$('sId').value.trim()||'#0001'; cfg.cap=$('sCap').value.trim()||'Olvassa be a belépőjegy kódját'; cfg.term=$('sTerm').value.trim()||'T-0412'; cfg.appName=$('sAppName').value.trim(); cfg.shift=$('sShift').value.trim(); cfg.info1l=$('sI1l').value.trim(); cfg.info1v=$('sI1v').value.trim(); cfg.info2l=$('sI2l').value.trim(); cfg.info2v=$('sI2v').value.trim(); cfg.fine=parseInt($('sFine').value,10)||0; cfg.preview=$('sPreview').checked; applyPreview(); cfg.spTitle=$('sSpTitle').value.trim(); cfg.spSub=$('sSpSub').value.trim(); cfg.spSec=parseFloat(String($('sSpSec').value).replace(',','.')); if(isNaN(cfg.spSec)) cfg.spSec=2; cfg.logo=pendingLogo||''; cfg.icon=pendingIcon||'';
+  $('setSave').addEventListener('click',()=>{ cfg.title=$('sTitle').value.trim()||'Jegyellenőrzés'; cfg.sub=$('sSub').value.trim(); cfg.welcome=$('sWelcome').value.trim(); cfg.deny=$('sDeny').value.trim(); cfg.id=$('sId').value.trim()||'#0001'; cfg.cap=$('sCap').value.trim()||'Olvassa be a belépőjegy kódját'; cfg.term=$('sTerm').value.trim()||'T-0412'; cfg.appName=$('sAppName').value.trim(); cfg.shift=$('sShift').value.trim(); cfg.info1l=$('sI1l').value.trim(); cfg.info1v=$('sI1v').value.trim(); cfg.info2l=$('sI2l').value.trim(); cfg.info2v=$('sI2v').value.trim(); cfg.fine=parseInt($('sFine').value,10)||0; cfg.preview=$('sPreview').checked; const hwWas=!!cfg.hwScan; cfg.hwScan=$('sHw').checked; cfg.night=$('sNight').value; cfg.nightFrom=$('sNightFrom').value; cfg.nightTo=$('sNightTo').value; cfg.dim=parseInt($('sDim').value,10)||0; applyNight(); applyPreview(); if(cfg.hwScan!==hwWas){ if(cfg.hwScan){ if(running) stopCamera(); hwInit(); } else startCamera(); } cfg.spTitle=$('sSpTitle').value.trim(); cfg.spSub=$('sSpSub').value.trim(); cfg.spSec=parseFloat(String($('sSpSec').value).replace(',','.')); if(isNaN(cfg.spSec)) cfg.spSec=2; cfg.logo=pendingLogo||''; cfg.icon=pendingIcon||'';
     store.set('cfg',cfg); drawHeader(); applyIcon(); closeSheets(); });
 
   /* test scans */
@@ -649,7 +955,334 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   $('bossReset').addEventListener('click',()=>{ for(const k in TX) $('tx_'+k).value=''; });
   sheets.push('bossBox');
 
-  setupDecoder().then(startCamera);
+  /* ===================== HARDWARE SCANNER (Zebra DataWedge keystroke) ===================== */
+  function hwInit(){ setScan(true); $('scanErr').hidden=true; $('cam').hidden=true; const i=$('codeInput'); setTimeout(()=>{ try{ i.focus({preventScroll:true}); }catch(e){ i.focus(); } },50); }
+  addEventListener('keydown',e=>{ if(!cfg.hwScan||DEV.capturing()) return; const t=e.target, tag=t&&t.tagName; if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT') return; if(e.key&&e.key.length===1&&!e.ctrlKey&&!e.metaKey){ $('codeInput').focus(); } },true);
+
+  /* ===================== DEV MODE – visual editor ===================== */
+  const DEV=(function(){
+    const EDIT=[
+      ['app','.app','Alkalmazás keret'],
+      ['top','.app:not(.ok):not(.bad) .top','Felső sáv (készenlét)'],
+      ['statusbar','.statusbar','Állapotsor (óra, hálózat, akku)'],
+      ['clock','#clock','Óra'],['net','#net','Hálózat jelzés'],['batt','#battPct','Akku %'],
+      ['topbar','.topbar','Beviteli sáv'],
+      ['codeInput','#codeInput','Azonosító mező','ph:codePh'],
+      ['enterBtn','.topbar .tb','Bevitel gomb','t:enterBtn'],
+      ['main','.app:not(.ok):not(.bad) .main','Főterület (készenlét)'],
+      ['okTop','.app.ok .top','Felső sáv – ÉRVÉNYES'],['okMain','.app.ok .main','Főterület – ÉRVÉNYES'],
+      ['badTop','.app.bad .top','Felső sáv – ÉRVÉNYTELEN'],['badMain','.app.bad .main','Főterület – ÉRVÉNYTELEN'],
+      ['cam','#cam','Kamera doboz'],['frame','#frame','Kamera keret'],['laser','.cam .laser','Lézervonal'],['cap','#cap','Kamera felirat','cfg:cap'],
+      ['brand','#brandBtn','Fejléc blokk (logó + név + állapot)'],
+      ['logo','#rLogo,#rMark','Fejléc logó'],
+      ['rName','#rName','Rendezvény neve','cfg:title'],
+      ['scanstate','#scanstate','Szkenner állapot felirat','t:scanReady'],
+      ['modehint','#modeHint','Bérlet mód sáv','t:modeBerletHint'],
+      ['secDevice','[data-t=secDevice]','Cím: Eszköz','t:secDevice'],['kvDevice','#kvDevice','Táblázat: Eszköz'],
+      ['secToday','[data-t=secToday]','Cím: Mai nap','t:secToday'],['kvToday','#kvToday','Táblázat: Mai nap'],
+      ['secLast','[data-t=secLast]','Cím: Utolsó','t:secLast'],['kvLast','#kvLast','Táblázat: Utolsó'],
+      ['secResult','[data-t=secResult]','Cím: Eredmény','t:secResult'],['kvResult','#kvResult','Táblázat: Eredmény'],
+      ['secCheck','[data-t=secCheck]','Cím: Ellenőrzés','t:secCheck'],['kvCheck','#kvCheck','Táblázat: Ellenőrzés'],
+      ['sec','.sec','Minden szakaszcím'],
+      ['kvKey','.kv div span:first-child','Adatsor – címke'],['kvVal','.kv div span:last-child','Adatsor – érték'],['kvRow','.kv div','Minden adatsor'],
+      ['actwrap','.actwrap','Gombok blokk'],
+      ['rMain','#rMain','Fő gomb (Következő / Pótdíj)','t:btnNext'],['rSec','#rSec','Mégis beengedés link','t:btnOverride'],
+      ['splash','#splash','Indítókép háttér'],['spLogo','#spLogo,#spMark','Indítókép logó'],['spTitle','#spTitle','Indítókép cím','cfg:spTitle'],['spSub','#spSub','Indítókép alcím','cfg:spSub'],['spBar','.spBar','Indítókép csík'],['spFill','#spFill','Indítókép csík töltés'],['spFoot','#spFoot','Indítókép lábléc'],
+      ['sheetH','.sheet h2','Felugró lap cím'],['sheetP','.sheet .btns .primary','Felugró lap fő gomb'],['sheetBtn','.sheet .btns button','Felugró lap gombok'],['sheet','.sheet','Felugró lapok']
+    ];
+    const BLK={brand:'Fejléc (logó, név, állapot)',device:'Eszköz',today:'Mai nap',last:'Utolsó',result:'Eredmény',check:'Ellenőrzés',act:'Gombok'};
+    const ORD={idle:['brand','device','today','last'],res:['result','check','act']};
+    const CSSMAP={bg:'background',fg:'color',fw:'font-weight',align:'text-align',tr:'text-transform',ls:'letter-spacing',ff:'font-family',pad:'padding',mar:'margin',w:'width',h:'height',bd:'border',sh:'box-shadow',fd:'flex-direction',jc:'justify-content',ai:'align-items',gap:'gap'};
+    const PROPS=['bg','fg','fs','fw','align','tr','ls','rad','pad','mar','w','h','bd','sh','ff','op','fd','jc','ai','gap','hide','tx','ty'];
+    const INLINE=['rName','clock','net','batt','kvKey','kvVal','scanstate','cap','spFoot'];
+    function tf(k,x,y){ return k==='frame'?'translate(calc(-50% + '+x+'px),calc(-50% + '+y+'px))':'translate('+x+'px,'+y+'px)'; }
+    const THEMES={'Lila (alap)':{},'BKK zöld':{status:'#0f2a1c',bar:'#1b5e20',btn:'#2e7d32',frame:'#69f0ae'},'MÁV kék':{status:'#0d2b55',bar:'#143d7a',btn:'#1e5bb8',frame:'#7fd1ff'},'Éjfekete':{status:'#000000',bar:'#111111',btn:'#333333',page:'#1a1a1a',muted:'#aaaaaa',line:'#333333',frame:'#ffb300'},'Narancs':{status:'#7a2e00',bar:'#e65100',btn:'#ff8f00',frame:'#ffd180'},'Pink':{status:'#4a0d2e',bar:'#ad1457',btn:'#d81b60',frame:'#ff80ab'}};
+    const dev=cfg.dev=Object.assign({on:false,open:false,edit:true,view:0,size:1,el:{},order:{},hideBlk:{},topPos:'top',camPos:'top',font:'',rad:'',css:'',splash:{}},cfg.dev||{});
+    let sel=null, saveT=null, styleEl=null;
+    const save=()=>{ clearTimeout(saveT); saveT=setTimeout(()=>store.set('cfg',cfg),250); };
+    const byKey=k=>EDIT.find(e=>e[0]===k);
+    const esc=s=>String(s);
+
+    function buildCss(){
+      let out='';
+      if(dev.font) out+=':root{--font:'+dev.font+'}\n';
+      if(dev.rad!==''&&dev.rad!=null) out+='.topbar input,.topbar .tb,.big,.cam,.brand img,.brand .mark,.modesw,.modehint,.sheet,.sheet .btns button,.sheet input,.sheet textarea{border-radius:'+dev.rad+'px!important}\n';
+      if(dev.appW) out+='.app{max-width:'+dev.appW+'px!important}\n';
+      const stores=[['',dev.el],['html.night ',dev.eln||{}]];
+      for(const [pre,S] of stores) for(const k in S){ const e=byKey(k); if(!e) continue; const p=S[k]; let d='';
+        for(const n in p){ const v=p[n]; if(v===''||v==null||v===false) continue;
+          if(n==='hide') d+='display:none!important;'; else if(n==='fs') d+='font-size:'+v+'px!important;'; else if(n==='rad') d+='border-radius:'+v+'px!important;'; else if(n==='op') d+='opacity:'+(v/100)+'!important;';
+          else if(CSSMAP[n]) d+=CSSMAP[n]+':'+esc(v)+'!important;'; }
+        if(p.tx||p.ty) d+='transform:'+tf(k,p.tx||0,p.ty||0)+'!important;';
+        if((p.w||p.h)&&INLINE.includes(k)) d+='display:inline-block!important;';
+        if(d) out+=e[1].split(',').map(x=>pre+x.trim()).join(',')+'{'+d+'}\n'; }
+      const s=dev.splash;
+      if(s.grad&&(dev.el.splash&&dev.el.splash.bg)) out+='#splash{background:linear-gradient(160deg,'+dev.el.splash.bg+','+s.grad+')!important}\n';
+      if(s.logoW) out+='#spLogo,#spMark{width:'+s.logoW+'px!important;height:'+s.logoW+'px!important;max-height:none!important}\n';
+      if(s.logoR!==''&&s.logoR!=null) out+='#spLogo,#spMark{border-radius:'+s.logoR+'px!important}\n';
+      if(s.logoT) out+='#spLogo{background:transparent!important;padding:0!important}\n';
+      if(s.noBar) out+='.spBar{display:none!important}\n';
+      if(s.noFoot) out+='#spFoot{display:none!important}\n';
+      if(s.bar) out+='#spFill{background:'+s.bar+'!important}\n';
+      if(dev.css) out+='\n/* egyéni */\n'+dev.css+'\n';
+      return out;
+    }
+    function applyLayout(){
+      const app=document.querySelector('.app'), top=$('top'), main=$('main'), cam=$('cam'), idle=$('idle');
+      for(const c in ORD){ const box=$(c), order=(dev.order[c]||ORD[c]).filter(b=>ORD[c].includes(b)); ORD[c].forEach(b=>{ if(!order.includes(b)) order.push(b); });
+        order.forEach(b=>{ const el=box.querySelector('[data-blk='+b+']'); if(el){ box.appendChild(el); el.hidden=!!dev.hideBlk[b]; } }); }
+      if(dev.topPos==='bottom') main.after(top); else app.prepend(top);
+      if(dev.camPos==='bottom') main.appendChild(cam); else main.insertBefore(cam,idle);
+      if(dev.camPos==='hidden') cam.hidden=true; else applyPreview();
+    }
+    function applySplash(){ const s=dev.splash;
+      if(s.logo){ $('spLogo').src=s.logo; $('spLogo').hidden=false; $('spMark').hidden=true; }
+      else if(cfg.logo){ $('spLogo').src=cfg.logo; $('spLogo').hidden=false; $('spMark').hidden=true; } else { $('spLogo').hidden=true; $('spMark').hidden=false; }
+      if(s.foot) $('spFoot').textContent=s.foot; else $('spFoot').textContent=(cfg.term||'')+' · '+tx('footInsp')+' '+cfg.id;
+      $('spTitle').textContent=cfg.spTitle||cfg.title||'Jegyellenőr terminál'; $('spSub').textContent=cfg.spSub||'Rendszer betöltése…'; }
+    function apply(){ if(!styleEl){ styleEl=document.createElement('style'); styleEl.id='devStyle'; document.head.appendChild(styleEl); } styleEl.textContent=buildCss(); applyLayout(); applySplash(); if($('dvCssGen')) $('dvCssGen').value=styleEl.textContent; }
+
+    /* ---- selection ---- */
+    function depth(el){ let d=0; while(el){ d++; el=el.parentElement; } return d; }
+    function pickFrom(target){ let best=null,bd=-1; for(const e of EDIT){ let m=null; try{ m=target.closest(e[1]); }catch(x){} if(m){ const d=depth(m); if(d>bd){ bd=d; best=e[0]; } } } return best; }
+    function highlight(){ document.querySelectorAll('.devSel').forEach(n=>n.classList.remove('devSel')); if(sel){ const e=byKey(sel); try{ document.querySelectorAll(e[1]).forEach(n=>n.classList.add('devSel')); }catch(x){} } drawSel(); }
+    let selNode=null;
+    function select(k,node){ sel=k; selNode=node||null; $('dvPick').value=k||''; highlight(); fillEl(); }
+    function capturing(){ return dev.on&&dev.edit!==false; }
+    const vis=n=>{ const r=n.getBoundingClientRect(); return r.width>0&&r.height>0; };
+    function selEl(){ if(!sel) return null; const e=byKey(sel); try{ if(selNode&&selNode.isConnected&&selNode.matches(e[1])&&vis(selNode)) return selNode; }catch(x){} let els=[]; try{ els=[...document.querySelectorAll(e[1])]; }catch(x){} return els.find(vis)||null; }
+    function drawSel(){ const box=$('devSelBox'); const n=capturing()?selEl():null; if(!n||drag&&drag.mode==='ord'){ if(!n) box.hidden=true; return; } const r=n.getBoundingClientRect(); box.hidden=false; box.classList.toggle('low',r.top<26); box.style.left=r.left+'px'; box.style.top=r.top+'px'; box.style.width=r.width+'px'; box.style.height=r.height+'px'; $('devSelLb').textContent=nmark()+byKey(sel)[2]; $('devOrdH').hidden=!n.closest('.blk'); }
+    setInterval(()=>{ if(dev.on){ drawSel(); syncItemVis(); } },200); addEventListener('scroll',drawSel,true); addEventListener('resize',drawSel);
+
+    /* ---- direct manipulation: click = select, drag = move, corner = resize, ⋮⋮ = reorder block, right-click / long-press = menu ---- */
+    const UI='#devPanel,#devBar,#devCtx,#devSelBox';
+    let drag=null, lp=null, moved=false, ctxAt=0;
+    document.addEventListener('click',e=>{ if(!capturing()) return; if(e.target.closest(UI)) return; e.preventDefault(); e.stopPropagation(); if(moved||Date.now()-ctxAt<800) return; hideCtx(); const k=pickFrom(e.target); if(k){ select(k,e.target.closest(byKey(k)[1])); if(dev.open) showTab('el'); } },true);
+    document.addEventListener('contextmenu',e=>{ if(!capturing()) return; if(e.target.closest('#devPanel,#devBar,#devCtx')) return; e.preventDefault(); e.stopPropagation(); if(lp){ clearTimeout(lp); lp=null; } const k=e.target.closest('#devSelBox')?sel:pickFrom(e.target); if(k){ if(k!==sel||!e.target.closest('#devSelBox')) select(k,e.target.closest(byKey(k)[1])); openCtx(e.clientX,e.clientY); } },true);
+    document.addEventListener('pointerdown',e=>{ if(!capturing()) return; if(e.target.closest('#devPanel,#devBar,#devCtx')) return;
+      if(e.target.id==='devRzH'){ startDrag(e,'rz'); return; } if(e.target.id==='devOrdH'){ startDrag(e,'ord'); return; } if(e.target.id==='devSelLb'){ e.preventDefault(); openCtx(e.clientX,e.clientY); return; }
+      if(Date.now()-ctxAt<800&&!$('devCtx').hidden){ return; } hideCtx(); if(e.target.tagName==='INPUT'||e.target.tagName==='BUTTON') e.preventDefault();
+      const k=pickFrom(e.target), n=selEl();
+      if(k&&sel&&k===sel&&n&&n.contains(e.target)){ startDrag(e,'move'); return; }
+      if(k&&e.pointerType!=='mouse'){ const x=e.clientX,y=e.clientY; const cancel=()=>{ clearTimeout(lp); lp=null; document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',cancel); document.removeEventListener('pointercancel',cancel); };
+        const mv=ev=>{ if(Math.hypot(ev.clientX-x,ev.clientY-y)>8) cancel(); };
+        lp=setTimeout(()=>{ cancel(); select(k,e.target.closest(byKey(k)[1])); openCtx(x,y); try{ navigator.vibrate&&navigator.vibrate(20); }catch(z){} },550);
+        document.addEventListener('pointermove',mv); document.addEventListener('pointerup',cancel); document.addEventListener('pointercancel',cancel); }
+    },true);
+    function startDrag(e,mode){ const n=selEl(); if(!n) return; e.preventDefault(); e.stopPropagation(); const p=getP(sel), r=n.getBoundingClientRect(), it=itemOf(sel);
+      drag={mode,x:e.clientX,y:e.clientY,tx:it?it.x:(+p.tx||0),ty:it?it.y:(+p.ty||0),w:r.width,h:r.height,blk:n.closest('.blk'),moved:false,idx:null};
+      const mv=ev=>{ ev.preventDefault(); const dx=ev.clientX-drag.x, dy=ev.clientY-drag.y; if(!drag.moved&&Math.hypot(dx,dy)<4) return; drag.moved=true; moved=true; hideCtx();
+        if(mode==='move'){ drag.cx=drag.tx+dx; drag.cy=drag.ty+dy; if(it){ n.style.left=drag.cx+'px'; n.style.top=drag.cy+'px'; } else n.style.transform=tf(sel,drag.cx,drag.cy); drawSel(); }
+        else if(mode==='rz'){ drag.cw=Math.max(10,Math.round(drag.w+dx)); drag.ch=Math.max(10,Math.round(drag.h+dy)); n.style.width=drag.cw+'px'; n.style.height=drag.ch+'px'; if(INLINE.includes(sel)) n.style.display='inline-block'; drawSel(); }
+        else if(mode==='ord'&&drag.blk){ const sib=[...drag.blk.parentElement.querySelectorAll(':scope>.blk')].filter(b=>!b.hidden); let idx=sib.length; for(let i=0;i<sib.length;i++){ const rr=sib[i].getBoundingClientRect(); if(ev.clientY<rr.top+rr.height/2){ idx=i; break; } } drag.idx=idx;
+          const L=$('devDrop'), ref=(idx<sib.length?sib[idx]:sib[sib.length-1]).getBoundingClientRect(); L.hidden=false; L.style.left=ref.left+'px'; L.style.width=ref.width+'px'; L.style.top=((idx<sib.length?ref.top:ref.bottom)-1)+'px'; } };
+      const up=()=>{ document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); document.removeEventListener('pointercancel',up); $('devDrop').hidden=true; const d=drag; drag=null; if(!d.moved) return;
+        if(mode==='move'){ if(it){ it.x=Math.round(d.cx); it.y=Math.round(d.cy); renderItems(); } else { n.style.transform=''; p.tx=Math.round(d.cx); p.ty=Math.round(d.cy); if(!p.tx) delete p.tx; if(!p.ty) delete p.ty; } }
+        else if(mode==='rz'){ n.style.width=''; n.style.height=''; n.style.display=''; if(it){ it.w=d.cw; it.h=d.ch; renderItems(); } else { p.w=d.cw+'px'; p.h=d.ch+'px'; } }
+        else if(mode==='ord'&&d.blk&&d.idx!=null){ const cont=d.blk.parentElement, c=cont.id, b=d.blk.dataset.blk; const vis=[...cont.querySelectorAll(':scope>.blk')].filter(x=>!x.hidden).map(x=>x.dataset.blk); const cur=vis.indexOf(b); vis.splice(cur,1); let idx=d.idx; if(cur<idx) idx--; vis.splice(idx,0,b); const hid=ORD[c].filter(x=>!vis.includes(x)); dev.order[c]=vis.concat(hid); }
+        apply(); save(); setTimeout(()=>{ moved=false; drawSel(); if(dev.open) fillEl(); },80); };
+      document.addEventListener('pointermove',mv,{passive:false}); document.addEventListener('pointerup',up); document.addEventListener('pointercancel',up); }
+
+    /* ---- context menu ---- */
+    function hideCtx(){ $('devCtx').hidden=true; }
+    addEventListener('keydown',e=>{ if(e.key==='Escape'){ hideCtx(); } });
+    function openCtx(x,y){ if(!sel) return; ctxAt=Date.now(); const e=byKey(sel), p=getP(sel), C=$('devCtx'); C.innerHTML='';
+      const add=(html,cls,fn)=>{ const b=document.createElement('button'); b.type='button'; b.className=cls||''; b.innerHTML=html; b.addEventListener('click',ev=>{ ev.stopPropagation(); fn(b); }); C.appendChild(b); return b; };
+      const nm=document.createElement('div'); nm.className='nm'; nm.textContent=nmark()+e[2]+(nightActive()?' (éjszakai beállítás)':''); C.appendChild(nm);
+      if(e[3]){ const i=document.createElement('input'); i.className='t'; i.placeholder='Szöveg… (üres = alap)'; i.value=textGet(e[3]); i.addEventListener('input',()=>textSet(e[3],i.value)); i.addEventListener('keydown',ev=>{ if(ev.key==='Enter') hideCtx(); }); C.appendChild(i); }
+      const col=(lbl,n)=>{ const l=document.createElement('label'); l.className='cb h2'; const sw=document.createElement('i'); sw.style.background=p[n]||'transparent'; const inp=document.createElement('input'); inp.type='color'; inp.value=p[n]||'#888888'; inp.addEventListener('input',()=>{ setP(sel,n,inp.value); sw.style.background=inp.value; }); l.append(sw,document.createTextNode(lbl),inp); C.appendChild(l); };
+      col('Háttér','bg'); col('Betűszín','fg');
+      const fs=()=>{ const n=selEl(); return parseFloat(p.fs||(n&&getComputedStyle(n).fontSize))||14; };
+      add('A−','',()=>setP(sel,'fs',Math.max(6,Math.round(fs()-1)))); add('A+','',()=>setP(sel,'fs',Math.min(96,Math.round(fs()+1))));
+      add('<b>B</b>',p.fw==='700'?'p':'',()=>{ setP(sel,'fw',p.fw==='700'?'':'700'); openCtx(x,y); });
+      add(p.hide?'👁 Mutat':'👁 Elrejt',p.hide?'p':'',()=>{ setP(sel,'hide',!p.hide); hideCtx(); });
+      [['⇤','left'],['≡','center'],['⇥','right']].forEach(([t,v])=>add(t,p.align===v?'p':'',()=>{ setP(sel,'align',p.align===v?'':v); openCtx(x,y); }));
+      add('⟲ Alap','d',()=>{ delete elStore()[sel]; apply(); save(); hideCtx(); drawSel(); });
+      const n=selEl(), blk=n&&n.closest('.blk');
+      if(blk){ add('▲ Blokk feljebb','h2',()=>{ moveBlk(blk,-1); }); add('▼ Blokk lejjebb','h2',()=>{ moveBlk(blk,1); }); }
+      add('⊕ Nagyobb','h2',()=>scale(1.1)); add('⊖ Kisebb','h2',()=>scale(.9));
+      add('↺ Helyre és eredeti méret','w',()=>{ delete p.tx; delete p.ty; delete p.w; delete p.h; setP(sel,'_',''); hideCtx(); });
+      const it=itemOf(sel);
+      if(sel==='logo'){ add('🖼 Fejléc logó csere','h2',()=>{ hideCtx(); askImg(d=>{ cfg.logo=d; drawHeader(); applySplash(); save(); }); }); add('🗑 Logó törlése','h2 d',()=>{ cfg.logo=''; drawHeader(); applySplash(); save(); hideCtx(); }); }
+      if(sel==='spLogo'){ add('🖼 Indítókép logó csere','h2',()=>{ hideCtx(); askImg(d=>{ dev.splash.logo=d; apply(); save(); }); }); add('🗑 Saját logó törlése','h2 d',()=>{ dev.splash.logo=''; apply(); save(); hideCtx(); }); }
+      if(it){ if(it.type==='img') add('🖼 Kép csere','h2',()=>{ hideCtx(); askImg(d=>{ it.src=d; renderItems(); save(); }); });
+        const VN={all:'minden nézeten',idle:'csak készenlét',res:'csak eredmény',splash:'csak indítókép'}; const VK=Object.keys(VN);
+        add('👀 '+VN[it.view||'all'],it.type==='img'?'h2':'w',()=>{ it.view=VK[(VK.indexOf(it.view||'all')+1)%VK.length]; renderItems(); save(); openCtx(x,y); });
+        add('🗑 Elem törlése','w d',()=>{ hideCtx(); delItem(sel); }); }
+      add('⚙ Minden beállítás…','w p',()=>{ hideCtx(); openPanel(true); showTab('el'); fillEl(); });
+      C.hidden=false; const W=252,H=C.offsetHeight||320; C.style.left=Math.max(4,Math.min(innerWidth-W-4,x))+'px'; C.style.top=Math.max(4,Math.min(innerHeight-H-4,y))+'px';
+      function scale(f){ const r=selEl().getBoundingClientRect(); p.w=Math.round(r.width*f)+'px'; p.h=Math.round(r.height*f)+'px'; setP(sel,'w',p.w); } }
+    /* ---- custom inserted items: image / text / box ---- */
+    dev.items=dev.items||[];
+    const ITEMLBL={img:'Beszúrt kép',text:'Beszúrt szöveg',box:'Beszúrt doboz'};
+    function itemKey(it){ return 'item_'+it.id; }
+    function itemOf(k){ if(!k||k.indexOf('item_')!==0) return null; const id=+k.slice(5); return dev.items.find(i=>i.id===id)||null; }
+    function registerItems(){ for(let i=EDIT.length-1;i>=0;i--) if(EDIT[i][0].indexOf('item_')===0) EDIT.splice(i,1); dev.items.forEach(it=>EDIT.push([itemKey(it),'[data-item="'+it.id+'"]',ITEMLBL[it.type]+' #'+it.id,it.type==='text'?'item:'+it.id:undefined])); fillPick(); }
+    function fillPick(){ const P=$('dvPick'); P.innerHTML='<option value="">– válassz –</option>'; EDIT.forEach(e=>{ const o=document.createElement('option'); o.value=e[0]; o.textContent=e[2]; P.appendChild(o); }); P.value=sel||''; }
+    function itemVisible(it){ const v=it.view||'all'; if(v==='all'||v==='splash') return true; if(v==='idle') return !$('idle').hidden; if(v==='res') return !$('res').hidden; return true; }
+    function renderItems(){ const L=$('devItems'), S=$('devItemsSp'); L.innerHTML=''; S.innerHTML='';
+      dev.items.forEach(it=>{ const d=document.createElement('div'); d.className='dvItem '+it.type; d.dataset.item=it.id; d.style.left=it.x+'px'; d.style.top=it.y+'px'; if(it.w) d.style.width=it.w+'px'; if(it.h) d.style.height=it.h+'px';
+        if(it.type==='img'){ const im=document.createElement('img'); im.src=it.src||''; im.alt=''; im.draggable=false; d.appendChild(im); } else if(it.type==='text') d.textContent=it.text||'Szöveg';
+        d.hidden=!itemVisible(it); ((it.view||'all')==='splash'?S:L).appendChild(d); }); }
+    function syncItemVis(){ dev.items.forEach(it=>{ const d=document.querySelector('[data-item="'+it.id+'"]'); if(d) d.hidden=!itemVisible(it); }); }
+    function addItem(type,src){ const id=dev.items.reduce((m,i)=>Math.max(m,i.id),0)+1; const it={id,type,x:40,y:140,view:'all'}; if(type==='img'){ it.src=src; it.w=160; it.h=120; } if(type==='text') it.text='Új szöveg'; if(type==='box'){ it.w=220; it.h=80; }
+      if(!$('splash').hidden&&!$('splash').classList.contains('out')) it.view='splash'; dev.items.push(it); registerItems(); renderItems(); apply(); save(); select(itemKey(it)); }
+    function delItem(k){ const it=itemOf(k); if(!it) return; dev.items=dev.items.filter(i=>i!==it); if(sel===k) sel=null; delete dev.el[k]; if(dev.eln) delete dev.eln[k]; registerItems(); renderItems(); apply(); save(); drawSel(); }
+    let fileCb=null; $('devFile').addEventListener('change',()=>{ const f=$('devFile').files[0]; $('devFile').value=''; if(f&&fileCb) readImg(f,900,fileCb); fileCb=null; });
+    function askImg(cb){ fileCb=cb; $('devFile').click(); }
+    function openAdd(x,y){ const C=$('devCtx'); C.innerHTML=''; const nm=document.createElement('div'); nm.className='nm'; nm.textContent='Beszúrás'+(!$('splash').hidden&&!$('splash').classList.contains('out')?' az indítóképre':''); C.appendChild(nm);
+      const add=(t,fn)=>{ const b=document.createElement('button'); b.type='button'; b.className='w'; b.textContent=t; b.addEventListener('click',ev=>{ ev.stopPropagation(); hideCtx(); fn(); }); C.appendChild(b); };
+      add('🖼 Kép (feltöltés)',()=>askImg(d=>addItem('img',d))); add('🔤 Szöveg / felirat',()=>addItem('text')); add('▭ Doboz / színes csík',()=>addItem('box'));
+      const h=document.createElement('div'); h.className='nm'; h.style.textTransform='none'; h.style.letterSpacing='0'; h.textContent='A beszúrt elem húzható, sarokból méretezhető, jobb klikk / hosszú nyomás: szín, szöveg, kép csere, nézet, törlés.'; C.appendChild(h);
+      C.hidden=false; C.style.left=Math.max(4,Math.min(innerWidth-256,x))+'px'; C.style.top=y+'px'; }
+    $('devAdd').addEventListener('click',e=>{ e.stopPropagation(); const r=e.currentTarget.getBoundingClientRect(); openAdd(r.right-252,r.bottom+6); });
+    registerItems(); renderItems();
+    function moveBlk(blk,dir){ const cont=blk.parentElement, c=cont.id, b=blk.dataset.blk; const order=(dev.order[c]||ORD[c]).slice(); ORD[c].forEach(x=>{ if(!order.includes(x)) order.push(x); }); const i=order.indexOf(b), j=i+dir; if(j<0||j>=order.length) return; order.splice(i,1); order.splice(j,0,b); dev.order[c]=order; apply(); save(); drawSel(); }
+
+    /* ---- element tab ---- */
+    function elStore(){ if(nightActive()){ dev.eln=dev.eln||{}; return dev.eln; } return dev.el; }
+    function getP(k){ const S=elStore(); return S[k]||(S[k]={}); }
+    function setP(k,n,v){ const S=elStore(), p=getP(k); if(v===''||v==null||v===false) delete p[n]; else p[n]=v; if(!Object.keys(p).length) delete S[k]; apply(); save(); }
+    const nmark=()=>nightActive()?'🌙 ':'';
+    function hex(v){ return normHex(v)||''; }
+    function fillEl(){ const row=$('dvTextRow'); if(!sel){ row.hidden=true; return; } const e=byKey(sel), p=elStore()[sel]||{};
+      row.hidden=!e[3]; if(e[3]) $('dvText').value=textGet(e[3]);
+      for(const n of PROPS){ const i=$('dvp_'+n); if(i){ if(i.type==='checkbox') i.checked=!!p[n]; else i.value=p[n]==null?'':p[n]; } }
+      for(const n of ['bg','fg']){ $('dvc_'+n).value=p[n]||'#888888'; $('dvh_'+n).value=p[n]||''; } }
+    function textGet(b){ const [kind,key]=b.split(':'); if(kind==='item'){ const it=dev.items.find(i=>i.id===+key); return it?(it.text||''):''; } if(kind==='t'||kind==='ph') return (cfg.tx&&cfg.tx[key])||''; return cfg[key]||''; }
+    function textSet(b,v){ const [kind,key]=b.split(':'); if(kind==='item'){ const it=dev.items.find(i=>i.id===+key); if(it){ it.text=v; renderItems(); } save(); return; } if(kind==='t'||kind==='ph'){ cfg.tx=cfg.tx||{}; if(v) cfg.tx[key]=v; else delete cfg.tx[key]; } else cfg[key]=v; drawHeader(); renderRows(); applyMode(); applySplash(); save(); }
+    $('dvText').addEventListener('input',()=>{ if(sel&&byKey(sel)[3]) textSet(byKey(sel)[3],$('dvText').value); });
+    $('dvPick').addEventListener('change',()=>select($('dvPick').value||null));
+    PROPS.forEach(n=>{ const i=$('dvp_'+n); if(!i) return; i.addEventListener(i.tagName==='SELECT'||i.type==='checkbox'?'change':'input',()=>{ if(!sel) return; setP(sel,n,i.type==='checkbox'?i.checked:i.value); }); });
+    ['bg','fg'].forEach(n=>{ $('dvc_'+n).addEventListener('input',()=>{ if(!sel) return; $('dvh_'+n).value=$('dvc_'+n).value; setP(sel,n,$('dvc_'+n).value); });
+      $('dvh_'+n).addEventListener('input',()=>{ if(!sel) return; const v=hex($('dvh_'+n).value); if(v){ $('dvc_'+n).value=v; setP(sel,n,v); } else if(!$('dvh_'+n).value) setP(sel,n,''); }); });
+    document.querySelectorAll('[data-clr]').forEach(b=>b.addEventListener('click',()=>{ const n=b.getAttribute('data-clr');
+      if(n==='bg'||n==='fg'){ if(sel){ setP(sel,n,''); fillEl(); } }
+      else if(n==='spbg'){ setP('splash','bg',''); fillSp(); } else if(n==='spfg'){ setP('splash','fg',''); fillSp(); }
+      else if(n==='spgrad'){ dev.splash.grad=''; apply(); save(); fillSp(); } else if(n==='spbar'){ dev.splash.bar=''; apply(); save(); fillSp(); }
+      else if(n==='logobg'){ setP('logo','bg',''); fillLogo(); } }));
+    $('dvElReset').addEventListener('click',()=>{ if(!sel) return; delete elStore()[sel]; apply(); save(); fillEl(); });
+
+    /* ---- layout tab ---- */
+    function renderOrder(){ for(const c in ORD){ const box=$(c==='idle'?'dvOrderIdle':'dvOrderRes'); box.innerHTML=''; const order=(dev.order[c]||ORD[c]).filter(b=>ORD[c].includes(b)); ORD[c].forEach(b=>{ if(!order.includes(b)) order.push(b); });
+        order.forEach((b,i)=>{ const d=document.createElement('div'); if(dev.hideBlk[b]) d.className='off'; const s=document.createElement('span'); s.textContent=BLK[b];
+          const up=mk('↑',()=>{ if(i>0){ order.splice(i,1); order.splice(i-1,0,b); dev.order[c]=order; apply(); save(); renderOrder(); } });
+          const dn=mk('↓',()=>{ if(i<order.length-1){ order.splice(i,1); order.splice(i+1,0,b); dev.order[c]=order; apply(); save(); renderOrder(); } });
+          const ey=mk(dev.hideBlk[b]?'Mutat':'Elrejt',()=>{ dev.hideBlk[b]=!dev.hideBlk[b]; apply(); save(); renderOrder(); });
+          d.append(s,up,dn,ey); box.appendChild(d); }); } }
+    function mk(t,fn){ const b=document.createElement('button'); b.type='button'; b.className='dvBtn'; b.textContent=t; b.addEventListener('click',fn); return b; }
+    $('dvTopPos').addEventListener('change',()=>{ dev.topPos=$('dvTopPos').value; apply(); save(); });
+    $('dvCamPos').addEventListener('change',()=>{ dev.camPos=$('dvCamPos').value; apply(); save(); });
+    $('dvAppW').addEventListener('input',()=>{ dev.appW=parseInt($('dvAppW').value,10)||''; apply(); save(); });
+    $('dvRad').addEventListener('input',()=>{ dev.rad=$('dvRad').value===''?'':parseInt($('dvRad').value,10)||0; apply(); save(); });
+    $('dvFont').addEventListener('change',()=>{ const v=$('dvFont').value; $('dvFontCRow').hidden=v!=='custom'; if(v!=='custom'){ dev.font=v; apply(); save(); } });
+    $('dvFontC').addEventListener('input',()=>{ dev.font=$('dvFontC').value; apply(); save(); });
+    function fillLay(){ renderOrder(); $('dvTopPos').value=dev.topPos||'top'; $('dvCamPos').value=dev.camPos||'top'; $('dvAppW').value=dev.appW||''; $('dvRad').value=dev.rad===''||dev.rad==null?'':dev.rad;
+      const opts=[...$('dvFont').options].map(o=>o.value); if(!dev.font) $('dvFont').value=''; else if(opts.includes(dev.font)) $('dvFont').value=dev.font; else { $('dvFont').value='custom'; $('dvFontC').value=dev.font; } $('dvFontCRow').hidden=$('dvFont').value!=='custom'; }
+
+    /* ---- splash tab ---- */
+    function fillSp(){ const s=dev.splash, p=dev.el.splash||{};
+      $('dvc_spbg').value=p.bg||(cfg.colors&&cfg.colors.status)||COL.status[1]; $('dvh_spbg').value=p.bg||''; $('dvc_spfg').value=p.fg||'#ffffff'; $('dvh_spfg').value=p.fg||'';
+      $('dvc_spgrad').value=s.grad||'#000000'; $('dvh_spgrad').value=s.grad||''; $('dvc_spbar').value=s.bar||(cfg.colors&&cfg.colors.frame)||COL.frame[1]; $('dvh_spbar').value=s.bar||'';
+      $('dvSpTitle').value=cfg.spTitle||''; $('dvSpSub').value=cfg.spSub||''; $('dvSpFoot').value=s.foot||''; $('dvSpSec').value=cfg.spSec; $('dvSpLogoW').value=s.logoW||''; $('dvSpLogoR').value=s.logoR==null?'':s.logoR; $('dvSpLogoT').checked=!!s.logoT; $('dvSpNoBar').checked=!!s.noBar; $('dvSpNoFoot').checked=!!s.noFoot;
+      $('dvSpLogoPrev').hidden=!s.logo; if(s.logo) $('dvSpLogoPrev').src=s.logo; }
+    function colPair(c,h,fn){ $(c).addEventListener('input',()=>{ $(h).value=$(c).value; fn($(c).value); }); $(h).addEventListener('input',()=>{ const v=hex($(h).value); if(v){ $(c).value=v; fn(v); } else if(!$(h).value) fn(''); }); }
+    colPair('dvc_spbg','dvh_spbg',v=>setP('splash','bg',v)); colPair('dvc_spfg','dvh_spfg',v=>setP('splash','fg',v));
+    colPair('dvc_spgrad','dvh_spgrad',v=>{ dev.splash.grad=v; apply(); save(); }); colPair('dvc_spbar','dvh_spbar',v=>{ dev.splash.bar=v; apply(); save(); });
+    $('dvSpTitle').addEventListener('input',()=>{ cfg.spTitle=$('dvSpTitle').value; applySplash(); save(); });
+    $('dvSpSub').addEventListener('input',()=>{ cfg.spSub=$('dvSpSub').value; applySplash(); save(); });
+    $('dvSpFoot').addEventListener('input',()=>{ dev.splash.foot=$('dvSpFoot').value; applySplash(); save(); });
+    $('dvSpSec').addEventListener('input',()=>{ const v=parseFloat($('dvSpSec').value); cfg.spSec=isNaN(v)?2:v; save(); });
+    $('dvSpLogoW').addEventListener('input',()=>{ dev.splash.logoW=parseInt($('dvSpLogoW').value,10)||''; apply(); save(); });
+    $('dvSpLogoR').addEventListener('input',()=>{ dev.splash.logoR=$('dvSpLogoR').value===''?'':parseInt($('dvSpLogoR').value,10)||0; apply(); save(); });
+    ['dvSpLogoT','dvSpNoBar','dvSpNoFoot'].forEach((id,i)=>{ const k=['logoT','noBar','noFoot'][i]; $(id).addEventListener('change',()=>{ dev.splash[k]=$(id).checked; apply(); save(); }); });
+    function showSplash(on){ const sp=$('splash'); if(on){ sp.hidden=false; sp.classList.remove('out'); $('spFill').style.width='100%'; } else { sp.classList.add('out'); setTimeout(()=>sp.hidden=true,450); } }
+    $('dvSpShow').addEventListener('click',()=>showSplash(true)); $('dvSpHide').addEventListener('click',()=>showSplash(false));
+    function readImg(file,max,cb){ const img=new Image(), url=URL.createObjectURL(file); img.onload=()=>{ const sc=Math.min(1,max/Math.max(img.width,img.height)); const c=document.createElement('canvas'); c.width=Math.round(img.width*sc); c.height=Math.round(img.height*sc); c.getContext('2d').drawImage(img,0,0,c.width,c.height); URL.revokeObjectURL(url); cb(c.toDataURL('image/png')); }; img.src=url; }
+    $('dvSpLogoFile').addEventListener('change',()=>{ const f=$('dvSpLogoFile').files[0]; if(!f) return; readImg(f,600,d=>{ dev.splash.logo=d; apply(); save(); fillSp(); $('dvSpLogoFile').value=''; }); });
+    $('dvSpLogoDel').addEventListener('click',()=>{ dev.splash.logo=''; apply(); save(); fillSp(); });
+
+    /* ---- logos tab ---- */
+    function fillLogo(){ const p=dev.el.logo||{}; $('dvLogoPrev').hidden=!cfg.logo; if(cfg.logo) $('dvLogoPrev').src=cfg.logo; $('dvLogoW').value=p.w?parseInt(p.w,10):''; $('dvLogoR').value=p.rad==null?'':p.rad; $('dvc_logobg').value=p.bg||'#ffffff'; $('dvLogoHide').checked=!!p.hide;
+      const b=dev.el.brand||{}; $('dvLogoPos').value=b.fd||''; $('dvIconPrev').src=cfg.icon||DEFAULT_ICON; $('dvAppName').value=cfg.appName||''; }
+    $('dvLogoFile').addEventListener('change',()=>{ const f=$('dvLogoFile').files[0]; if(!f) return; readImg(f,400,d=>{ cfg.logo=d; drawHeader(); applySplash(); save(); fillLogo(); $('dvLogoFile').value=''; }); });
+    $('dvLogoDel').addEventListener('click',()=>{ cfg.logo=''; drawHeader(); applySplash(); save(); fillLogo(); });
+    $('dvLogoW').addEventListener('input',()=>{ const v=parseInt($('dvLogoW').value,10); const p=getP('logo'); if(v){ p.w=v+'px'; p.h=v+'px'; } else { delete p.w; delete p.h; } apply(); save(); });
+    $('dvLogoR').addEventListener('input',()=>setP('logo','rad',$('dvLogoR').value===''?'':parseInt($('dvLogoR').value,10)||0));
+    $('dvc_logobg').addEventListener('input',()=>setP('logo','bg',$('dvc_logobg').value));
+    $('dvLogoHide').addEventListener('change',()=>setP('logo','hide',$('dvLogoHide').checked));
+    $('dvLogoPos').addEventListener('change',()=>{ const v=$('dvLogoPos').value; const p=getP('brand'); if(v){ p.fd=v; if(v==='column'){ p.align='center'; p.ai='center'; } else { delete p.align; delete p.ai; } } else { delete p.fd; delete p.align; delete p.ai; } if(!Object.keys(p).length) delete dev.el.brand; apply(); save(); });
+    $('dvIconFile').addEventListener('change',()=>{ const f=$('dvIconFile').files[0]; if(!f) return; const img=new Image(), url=URL.createObjectURL(f); img.onload=()=>{ const c=document.createElement('canvas'); c.width=c.height=192; const x=c.getContext('2d'); const sc=Math.max(192/img.width,192/img.height); const w=img.width*sc,h=img.height*sc; x.drawImage(img,(192-w)/2,(192-h)/2,w,h); cfg.icon=c.toDataURL('image/png'); URL.revokeObjectURL(url); applyIcon(); save(); fillLogo(); $('dvIconFile').value=''; }; img.src=url; });
+    $('dvIconDel').addEventListener('click',()=>{ cfg.icon=''; applyIcon(); save(); fillLogo(); });
+    $('dvAppName').addEventListener('input',()=>{ cfg.appName=$('dvAppName').value; applyIcon(); save(); });
+
+    /* ---- colors tab ---- */
+    function fillCol(){ const C=$('dvCols'); C.innerHTML='';
+      for(const k in COL){ const l=document.createElement('label'); l.style.cssText='font-size:.7rem;color:#9aa4b0;display:flex;flex-direction:column;gap:3px'; l.textContent=COL[k][0]; const row=document.createElement('span'); row.className='dvCol';
+        const c=document.createElement('input'); c.type='color'; c.value=(cfg.colors&&cfg.colors[k])||COL[k][1]; const h=document.createElement('input'); h.className='hx'; h.value=c.value; h.spellcheck=false;
+        const fn=v=>{ cfg.colors=cfg.colors||{}; if(v&&v.toLowerCase()!==COL[k][1]) cfg.colors[k]=v; else delete cfg.colors[k]; applyColors(); save(); };
+        c.addEventListener('input',()=>{ h.value=c.value; fn(c.value); }); h.addEventListener('input',()=>{ const v=hex(h.value); if(v){ c.value=v; fn(v); } });
+        row.append(c,h); l.appendChild(row); C.appendChild(l); }
+      for(const k in NCOL){ const l=document.createElement('label'); l.style.cssText='font-size:.7rem;color:#9aa4b0;display:flex;flex-direction:column;gap:3px'; l.textContent=NCOL[k][0]; const row=document.createElement('span'); row.className='dvCol';
+        const c=document.createElement('input'); c.type='color'; c.value=(cfg.ncolors&&cfg.ncolors[k])||NCOL[k][1]; const h=document.createElement('input'); h.className='hx'; h.value=c.value; h.spellcheck=false;
+        const fn=v=>{ cfg.ncolors=cfg.ncolors||{}; if(v&&v.toLowerCase()!==NCOL[k][1]) cfg.ncolors[k]=v; else delete cfg.ncolors[k]; applyColors(); save(); };
+        c.addEventListener('input',()=>{ h.value=c.value; fn(c.value); }); h.addEventListener('input',()=>{ const v=hex(h.value); if(v){ c.value=v; fn(v); } });
+        row.append(c,h); l.appendChild(row); C.appendChild(l); }
+      const T=$('dvThemes'); T.innerHTML=''; for(const n in THEMES) T.appendChild(mk(n,()=>{ cfg.colors=Object.assign({},THEMES[n]); applyColors(); save(); fillCol(); })); }
+    $('dvColReset').addEventListener('click',()=>{ cfg.colors={}; cfg.ncolors={}; applyColors(); save(); fillCol(); });
+
+    /* ---- texts tab ---- */
+    function fillTx(){ const F=$('dvTexts'); F.innerHTML=''; const q=($('dvTxFind').value||'').toLowerCase();
+      for(const k in TX){ if(q&&!(TX[k][0]+' '+TX[k][1]).toLowerCase().includes(q)) continue; const l=document.createElement('label'); l.textContent=TX[k][0]; const i=document.createElement('input'); i.placeholder=TX[k][1]; i.value=(cfg.tx&&cfg.tx[k])||'';
+        i.addEventListener('input',()=>{ cfg.tx=cfg.tx||{}; if(i.value) cfg.tx[k]=i.value; else delete cfg.tx[k]; drawHeader(); renderRows(); applyMode(); applySplash(); if(!$('res').hidden&&$('rMain')) { $('rMain').textContent=document.querySelector('.app').classList.contains('ok')?tx('btnNext'):tx('btnFine'); $('rSec').textContent=tx('btnOverride'); } save(); });
+        l.appendChild(i); F.appendChild(l); } }
+    $('dvTxFind').addEventListener('input',fillTx);
+    $('dvTxReset').addEventListener('click',()=>{ cfg.tx={}; drawHeader(); renderRows(); applyMode(); save(); fillTx(); });
+
+    /* ---- css tab ---- */
+    let cssT=null; $('dvCss').addEventListener('input',()=>{ clearTimeout(cssT); cssT=setTimeout(()=>{ dev.css=$('dvCss').value; apply(); save(); },300); });
+
+    /* ---- export tab ---- */
+    function fillExp(){ $('dvExp').value=JSON.stringify(cfg,null,1); }
+    $('dvExpCopy').addEventListener('click',()=>{ fillExp(); copyText($('dvExp').value,$('dvExpCopy')); });
+    $('dvExpLoad').addEventListener('click',()=>{ try{ const o=JSON.parse($('dvExp').value); if(!o||typeof o!=='object') throw 0; for(const k in cfg) delete cfg[k]; Object.assign(cfg,o); store.set('cfg',cfg); location.reload(); }catch(e){ $('dvExpLoad').textContent='Hibás JSON'; setTimeout(()=>$('dvExpLoad').textContent='Beillesztett konfig betöltése',1500); } });
+    $('dvDl').addEventListener('click',()=>{ clearTimeout(saveT); store.set('cfg',cfg); dev.on=false; downloadApp(); dev.on=true; });
+    $('dvExit').addEventListener('click',()=>{ dev.on=false; store.set('cfg',cfg); location.href=location.pathname; });
+    $('dvReset').addEventListener('click',()=>{ if(!confirm('Minden dev-beállítás (elemek, elrendezés, indítókép, CSS) törlődik. A szövegek és alapszínek maradnak.')) return; cfg.dev={on:true,open:true}; store.set('cfg',cfg); location.reload(); });
+
+    /* ---- previews ---- */
+    function preview(m){ const app=document.querySelector('.app');
+      if(m==='splash'){ showSplash(true); if(dev.open) showTab('sp'); return; } showSplash(false);
+      if(m==='idle'){ app.className='app'; $('res').hidden=true; $('idle').hidden=false; return; }
+      const ok=m==='ok', now=new Date(); app.className='app '+(ok?'ok':'bad'); $('idle').hidden=true; $('res').hidden=false;
+      kv('kvResult',[[tx('kRes'),ok?tx('resOk'):tx('vExpired')],[tx('kWhy'),ok?'':tx('whyExpired')+' 2026.01.01. 23:59'],[tx('kName'),'Minta Vendég'],[tx('kType'),'Belépőjegy'],[tx('kSerial'),'PARTY-0042'],[tx('kTo'),'2026.12.31. 23:59']]);
+      kv('kvCheck',[[tx('kMode'),tx('modeJegy')],[tx('kChecked'),fmtFullS(now)],[tx('kPlace'),cfg.sub],[tx('kDevice'),cfg.term],[tx('kInsp'),cfg.id],ok?[tx('kTxn'),'20260101-00042']:[tx('kFine'),ftFine(cfg.fine)]]);
+      $('rMain').textContent=ok?tx('btnNext'):tx('btnFine'); $('rSec').textContent=tx('btnOverride'); $('rSec').hidden=ok; }
+    document.querySelectorAll('[data-pv]').forEach(b=>b.addEventListener('click',()=>preview(b.getAttribute('data-pv'))));
+
+    /* ---- panel ---- */
+    const SIZES=['34vh','48vh','68vh'];
+    function showTab(t){ document.querySelectorAll('.dvTabs button').forEach(b=>b.classList.toggle('on',b.getAttribute('data-tab')===t)); document.querySelectorAll('.dvTab').forEach(d=>d.hidden=d.id!=='dvt-'+t);
+      if(t==='lay') fillLay(); if(t==='sp') fillSp(); if(t==='logo') fillLogo(); if(t==='col') fillCol(); if(t==='tx') fillTx(); if(t==='css') $('dvCss').value=dev.css||''; if(t==='exp') fillExp(); }
+    document.querySelectorAll('.dvTabs button').forEach(b=>b.addEventListener('click',()=>showTab(b.getAttribute('data-tab'))));
+    function openPanel(on){ dev.open=on; $('devPanel').hidden=!on; document.body.classList.toggle('dev',on); $('devPanelBtn').classList.toggle('on',on); if(on){ showTab('el'); fillEl(); } setTimeout(drawSel,50); save(); }
+    function setEdit(on){ dev.edit=on; $('devEdit').classList.toggle('on',on); document.body.classList.toggle('devedit',on); if(!on){ hideCtx(); $('devSelBox').hidden=true; } else drawSel(); save(); }
+    $('devHide').addEventListener('click',()=>openPanel(false)); $('devPanelBtn').addEventListener('click',()=>openPanel(!dev.open));
+    $('devEdit').addEventListener('click',()=>setEdit(!dev.edit));
+    const VIEWS=['idle','ok','bad','splash'], VLBL={idle:'KÉSZENLÉT',ok:'ÉRVÉNYES',bad:'ÉRVÉNYTELEN',splash:'INDÍTÓKÉP'};
+    $('devView').addEventListener('click',()=>{ dev.view=((dev.view||0)+1)%VIEWS.length; const v=VIEWS[dev.view]; preview(v); $('devView').textContent='▶ '+VLBL[v]; hideCtx(); save(); });
+    $('devNight').addEventListener('click',()=>{ toggleNight(); $('devNight').classList.toggle('on',nightActive()); hideCtx(); drawSel(); if(dev.open) fillEl(); });
+    $('devSize').addEventListener('click',()=>{ dev.size=((dev.size||1)+1)%SIZES.length; document.documentElement.style.setProperty('--devh',SIZES[dev.size]); save(); });
+    function start(){ dev.on=true; fillPick();
+      document.documentElement.style.setProperty('--devh',SIZES[dev.size||1]); $('devBar').hidden=false; $('devNight').classList.toggle('on',nightActive()); setEdit(dev.edit!==false); openPanel(!!dev.open); }
+    $('devOpen').addEventListener('click',()=>{ if($('pinInput').value.trim()!==(cfg.pin||'0000')){ $('pinMsg').textContent='Hibás PIN-kód.'; return; } $('pinInput').value=''; closeSheets(); dev.open=true; start(); save(); });
+
+    apply();
+    if(/[?&]dev\b/.test(location.search)||dev.on){ setTimeout(start,0); }
+    return {capturing,apply};
+  })();
+
+  setupDecoder().then(()=>{ if(cfg.hwScan) hwInit(); else startCamera(); });
 })();
 </script>
 
