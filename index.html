@@ -127,6 +127,12 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 .spBar i{display:block;height:100%;width:0;background:var(--frame);transition:width 1.4s ease-out}
 .spFoot{position:absolute;bottom:calc(20px + env(safe-area-inset-bottom,0px));font-size:.7rem;opacity:.6;letter-spacing:.06em;font-variant-numeric:tabular-nums}
 
+/* ===== FIT FIXES (kis kijelző) ===== */
+.brand{flex-wrap:wrap}.brand .bt{flex:1 1 210px;min-width:0}.rname{overflow-wrap:anywhere;max-width:100%}.scanstate{max-width:100%;flex-wrap:wrap}
+.statusbar>*{white-space:nowrap}
+.logoprev{flex-wrap:wrap}.logoprev label.fb{min-width:0;flex:1 1 160px;display:flex;flex-direction:column;align-items:flex-start}.logoprev input[type=file]{max-width:100%;font-size:.85rem}
+.sheet .btns>*{min-width:0}.kv div span:last-child{overflow-wrap:anywhere}.kv div span:first-child{overflow-wrap:anywhere}
+.scanerr,.modehint{overflow-wrap:anywhere}
 /* ===== NIGHT MODE ===== */
 html.night{--status:var(--n-status,#0b0b0f);--bar:var(--n-bar,#1a1a24);--btn:var(--n-btn,#2c2c3a);--page:var(--n-page,#121216);--card:var(--n-card,#1c1c22);--fg:var(--n-fg,#ececf1);--muted:var(--n-muted,#9a9aa6);--line:var(--n-line,#2c2c36);--ok:var(--n-ok,#1b5e20);--ok-dark:var(--n-ok-dark,#0f3d13);--bad:var(--n-bad,#8e1b1b);--bad-dark:var(--n-bad-dark,#5a1010);color-scheme:dark}
 html.night .brand img,html.night .brand .mark{background:#1c1c22;border-color:var(--line)}
@@ -150,7 +156,8 @@ body.dev .app{height:calc(100% - var(--devh))}
 #devPanel{position:fixed;left:0;right:0;bottom:0;height:var(--devh);z-index:60;background:#14161a;color:#e6e6e6;font-family:var(--font);font-size:.85rem;display:flex;flex-direction:column;box-shadow:0 -4px 20px rgba(0,0,0,.45)}
 @media (min-width:980px){ body.dev{--devh:0px} body.dev .app{height:100%;margin-left:max(0px,calc((100vw - 440px - 560px)/2))} #devPanel{left:auto;top:0;width:440px;height:100%} }
 #devPanel[hidden]{display:none!important}
-.dvHead{display:flex;align-items:center;gap:6px;padding:6px 8px;background:#1f2329;border-bottom:1px solid #2c313a;flex:0 0 auto;flex-wrap:wrap}
+.dvHead{display:flex;align-items:center;gap:6px;padding:6px 8px;background:#1f2329;border-bottom:1px solid #2c313a;flex:0 0 auto;flex-wrap:wrap}.dvHead .dvBtn{padding:6px 8px;font-size:.72rem}
+.dvRow label{min-width:0}.dvRow label.n{flex-basis:28%;min-width:90px}
 .dvHead b{font-size:.78rem;letter-spacing:.12em;color:#ffb300;margin-right:auto}
 .dvTabs{display:flex;overflow-x:auto;background:#1a1d22;flex:0 0 auto;border-bottom:1px solid #2c313a;scrollbar-width:none}
 .dvTabs button{flex:0 0 auto;background:transparent;border:0;color:#9aa4b0;padding:9px 11px;font:inherit;font-size:.78rem;font-weight:700;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
@@ -172,7 +179,7 @@ body.dev .app{height:calc(100% - var(--devh))}
 .dvBtn.on{background:#ffb300;color:#111;border-color:#ffb300}
 .dvHint{font-size:.72rem;color:#8a97a3;line-height:1.45}
 .dvH{font-size:.68rem;text-transform:uppercase;letter-spacing:.12em;color:#ffb300;margin-top:4px}
-.dvCol{display:flex;align-items:center;gap:6px}
+.dvCol{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0}
 .dvCol input.hx{width:9ch;flex:0 0 auto;font-family:ui-monospace,monospace;font-size:.78rem}
 .dvCol .dvBtn{padding:5px 8px;flex:0 0 auto}
 .dvList{display:flex;flex-direction:column;gap:4px}
@@ -1069,6 +1076,7 @@ html.night .dvItem.text{color:#eee}
       for(const [pre,S] of stores) for(const k in S){ const e=byKey(k); if(!e) continue; const p=S[k]; let d='';
         for(const n in p){ let v=p[n]; if(v===''||v==null||v===false) continue; if(SCALE_PX.includes(n)) v=scPx(v,F);
           if(n==='hide') d+='display:none!important;'; else if(n==='fs') d+='font-size:'+(Math.round(v*F*10)/10)+'px!important;'; else if(n==='rad') d+='border-radius:'+Math.round(v*F)+'px!important;'; else if(n==='op') d+='opacity:'+(v/100)+'!important;';
+          else if((n==='w'||n==='h')&&INLINE.includes(k)) d+=(n==='w'?'min-width:min('+esc(v)+',100%)':'min-height:'+esc(v))+'!important;max-width:100%!important;'
           else if(CSSMAP[n]) d+=CSSMAP[n]+':'+esc(v)+'!important;'; }
         if(p.tx||p.ty) d+='transform:'+tf(k,Math.round((p.tx||0)*F),Math.round((p.ty||0)*F))+'!important;';
         if((p.w||p.h)&&INLINE.includes(k)) d+='display:inline-block!important;';
