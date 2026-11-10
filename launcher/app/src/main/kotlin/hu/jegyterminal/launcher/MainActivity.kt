@@ -46,7 +46,6 @@ class MainActivity : Activity() {
         findViewById<View>(R.id.retry).setOnClickListener { findViewById<View>(R.id.offline).visibility = View.GONE; web.loadUrl(url) }
         findViewById<View>(R.id.offlineSettings).setOnClickListener { askPin { showSettings() } }
         val handle = findViewById<View>(R.id.handle)
-        handle.setOnClickListener { openDrawer() }
         handle.setOnLongClickListener { askPin { showSettings() }; true }
         val gd = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
             override fun onFling(e1: MotionEvent?, e2: MotionEvent, vx: Float, vy: Float): Boolean {

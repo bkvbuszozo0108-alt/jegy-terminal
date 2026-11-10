@@ -9,6 +9,7 @@
         <Button android:id="@+id/retry" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Újra" android:layout_marginTop="20dp"/>
         <Button android:id="@+id/offlineSettings" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Beállítások" android:layout_marginTop="8dp"/>
     </LinearLayout>
-    <View android:id="@+id/handle" android:layout_width="64dp" android:layout_height="6dp" android:layout_gravity="bottom|center_horizontal"
-        android:layout_marginBottom="6dp" android:background="@drawable/handle_bg" android:alpha="0.7"/>
+    <!-- láthatatlan érintőfelület alul középen: hosszan nyomva PIN → beállítások; az alkalmazás-lista felfelé húzással nyílik -->
+    <View android:id="@+id/handle" android:layout_width="160dp" android:layout_height="28dp" android:layout_gravity="bottom|center_horizontal"
+        android:background="@android:color/transparent"/>
 </FrameLayout>
