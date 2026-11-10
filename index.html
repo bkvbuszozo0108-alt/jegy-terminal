@@ -321,7 +321,7 @@ html.night .dvItem.text{color:#eee}
     <div class="log" id="noteLog"></div>
     <div class="sys">
       <div class="syshd" data-t="sysHd">Rendszer</div>
-      <div class="sysrow"><span data-t="sysApp">Alkalmazás</span><span data-t="sysAppVal">Belépőjegy terminál v2.7.0</span></div>
+      <div class="sysrow"><span data-t="sysApp">Alkalmazás</span><span data-t="sysAppVal">Belépőjegy terminál v2.7.1</span></div>
       <div class="sysrow"><span data-t="sysTermL">Terminál</span><span id="sysTerm">T-0412</span></div>
       <div class="sysrow"><span data-t="sysInsp">Jegyellenőr</span><span id="sysId"></span></div>
       <div class="sysrow"><span data-t="sysStartL">Szolgálat kezdete</span><span id="sysStart"></span></div>
@@ -357,7 +357,7 @@ html.night .dvItem.text{color:#eee}
     <label>Felirat a szkenner alatt<input id="sCap" placeholder="Olvassa be a belépőjegy kódját"></label>
     <label style="flex-direction:row;align-items:center;gap:10px"><input type="checkbox" id="sPreview" style="width:auto"> Kamera előnézet mutatása (alap: rejtve, a szkenner a háttérben fut)</label>
     <div class="syshd" style="margin:4px 0 0">Szerver (központi előzmények)</div>
-    <label>Szerver címe (pl. http://192.168.1.20:8787 – üres = nincs szerver)<input id="sSrv" placeholder="http://192.168.1.20:8787" inputmode="url"></label>
+    <label>Szerver címe – webes (Google Apps Script …/exec) vagy helyi gép (http://192.168.1.20:8787); üres = nincs<input id="sSrv" placeholder="https://script.google.com/macros/s/…/exec" inputmode="url"></label>
     <label>Szerver kulcs (ugyanaz, mint a szerver-appban)<input id="sSrvKey" placeholder="kulcs"></label>
     <div class="dlhint" id="sSrvState">A terminál minden beolvasást beküld a szervernek, és a szerver tudja, ha egy jegyet másik terminálon már felhasználtak.</div>
     <div class="syshd" style="margin:4px 0 0">Dátum ellenőrzés</div>
@@ -630,7 +630,7 @@ html.night .dvItem.text{color:#eee}
     emptyList:['Üres lista szövege','Még nincs beolvasás. Tartsa a jegy kódját a keretbe.'],
     manualTitle:['Kézi bevitel – cím','Kézi bevitel'], manualLabel:['Kézi bevitel – mező','Jegy kódja / sorszáma'], manualOk:['Kézi bevitel – gomb','Ellenőriz'], cancel:['Mégse gomb','Mégse'], close:['Bezár gomb','Bezár'],
     logTitle:['Napló – cím','Napló'], noteLabel:['Napló – új bejegyzés','Új bejegyzés'], noteSave:['Napló – rögzítés gomb','Rögzítés'], clearBtn:['Törlés gomb','Beolvasások és napló törlése'], instBtn:['Telepítés gomb','⤓ Telepítés a kezdőképernyőre'],
-    sysHd:['Rendszer panel – cím','Rendszer'], sysApp:['Rendszer – alkalmazás','Alkalmazás'], sysAppVal:['Rendszer – alkalmazás neve/verzió','Belépőjegy terminál v2.7.0'], sysTermL:['Rendszer – terminál','Terminál'], sysInsp:['Rendszer – ellenőr','Jegyellenőr'], sysStartL:['Rendszer – szolgálat kezdete','Szolgálat kezdete'], sysCountL:['Rendszer – számláló','Beengedve / elutasítva'],
+    sysHd:['Rendszer panel – cím','Rendszer'], sysApp:['Rendszer – alkalmazás','Alkalmazás'], sysAppVal:['Rendszer – alkalmazás neve/verzió','Belépőjegy terminál v2.7.1'], sysTermL:['Rendszer – terminál','Terminál'], sysInsp:['Rendszer – ellenőr','Jegyellenőr'], sysStartL:['Rendszer – szolgálat kezdete','Szolgálat kezdete'], sysCountL:['Rendszer – számláló','Beengedve / elutasítva'],
     resTitle:['Eredmény – fejléc','Ellenőrzés eredménye'], codeLabel:['Eredmény – jegykód felirat','Jegykód:'], txn:['Eredmény – tranzakció felirat','Tranzakció'], validityLabel:['Eredmény – érvényesség felirat','Érvényesség:'],
     vValid:['Ítélet: érvényes','ÉRVÉNYES'], vInvalid:['Ítélet: érvénytelen','ÉRVÉNYTELEN'], vExpired:['Ítélet: lejárt','LEJÁRT'], vUsed:['Ítélet: már felhasznált','MÁR FELHASZNÁLT'],
     kDate:['Sor: Jegy dátuma','Jegy dátuma'], whyWrongDay:['Indok: más napra szól','A jegy más napra szól:'], whyNoDate:['Indok: nincs dátum a jegyen','A jegyen nincs dátum'],
@@ -802,12 +802,18 @@ html.night .dvItem.text{color:#eee}
   const uuid=()=>Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8);
   let outbox=store.get('outbox',[]), srvLast='';
   function srvStateText(){ if(!cfg.serverUrl) return 'Nincs szerver beállítva. A terminál minden beolvasást beküld a szervernek, és a szerver tudja, ha egy jegyet másik terminálon már felhasználtak.'; return 'Szerver: '+cfg.serverUrl+' · várakozó: '+outbox.length+(srvLast?' · '+srvLast:''); }
-  function srvFetch(path,opt,ms){ if(!cfg.serverUrl) return Promise.reject(new Error('no server')); const c=new AbortController(); const t=setTimeout(()=>c.abort(),ms||4000); const o=Object.assign({signal:c.signal,headers:Object.assign({'Content-Type':'application/json','X-Key':cfg.serverKey||''},(opt&&opt.headers)||{})},opt||{}); return fetch(cfg.serverUrl+path,o).finally(()=>clearTimeout(t)); }
+  const srvIsGs=()=>/script\.google\.com|googleusercontent\.com/.test(cfg.serverUrl||'');
+  function srvFetch(path,opt,ms){ if(!cfg.serverUrl) return Promise.reject(new Error('no server')); const c=new AbortController(); const t=setTimeout(()=>c.abort(),ms||4000);
+    if(srvIsGs()){ /* Google Apps Script: nincs egyedi fejléc (CORS), kulcs a paraméterben / törzsben, a=művelet */
+      const m=/^\/api\/(\w+)\??(.*)$/.exec(path)||[]; const a=m[1]||'', qs=m[2]||''; let u=cfg.serverUrl+(cfg.serverUrl.includes('?')?'&':'?')+'a='+a+'&key='+encodeURIComponent(cfg.serverKey||'')+(qs?'&'+qs:'');
+      const o={signal:c.signal,method:(opt&&opt.method)||'GET',redirect:'follow'}; if(o.method==='POST'){ o.body=JSON.stringify({key:cfg.serverKey||'',events:JSON.parse((opt&&opt.body)||'[]')}); u=cfg.serverUrl; }
+      return fetch(u,o).finally(()=>clearTimeout(t)); }
+    const o=Object.assign({signal:c.signal,headers:Object.assign({'Content-Type':'application/json','X-Key':cfg.serverKey||''},(opt&&opt.headers)||{})},opt||{}); return fetch(cfg.serverUrl+path,o).finally(()=>clearTimeout(t)); }
   function srvQueue(ev){ if(!cfg.serverUrl) return; outbox.push(ev); if(outbox.length>5000) outbox=outbox.slice(-5000); store.set('outbox',outbox); srvFlush(); }
   let flushing=false;
   async function srvFlush(){ if(flushing||!cfg.serverUrl||!outbox.length||!navigator.onLine) return; flushing=true; try{ const batch=outbox.slice(0,200); const r=await srvFetch('/api/scan',{method:'POST',body:JSON.stringify(batch)},8000); if(r.ok){ outbox=outbox.slice(batch.length); store.set('outbox',outbox); srvLast='küldve '+fmtHM(new Date()); } else srvLast='hiba '+r.status; }catch(e){ srvLast='nem elérhető'; } flushing=false; const el=$('sSrvState'); if(el) el.textContent=srvStateText(); if(outbox.length&&srvLast.startsWith('küldve')) setTimeout(srvFlush,50); }
   setInterval(srvFlush,20000); addEventListener('online',srvFlush); setTimeout(srvFlush,1500);
-  async function srvUsedCheck(code){ if(!cfg.serverUrl||!navigator.onLine) return null; try{ const r=await srvFetch('/api/used?code='+encodeURIComponent(code),{},1800); if(!r.ok) return null; const j=await r.json(); return j&&j.used?j.used:null; }catch(e){ return null; } }
+  async function srvUsedCheck(code){ if(!cfg.serverUrl||!navigator.onLine) return null; try{ const r=await srvFetch('/api/used?code='+encodeURIComponent(code),{},srvIsGs()?3500:1800); if(!r.ok) return null; const j=await r.json(); return j&&j.used?j.used:null; }catch(e){ return null; } }
   let scanBusy=false;
   async function showResult(text,isTest){ if(scanBusy) return; scanBusy=true; try{
       if(!isTest&&cfg.serverUrl){ const t0=parseTicket(text); const u=await srvUsedCheck(t0.code); if(u){ const used=store.get('used',{}); if(!used[t0.code]){ used[t0.code]=(u.time||'')+(u.device?' · '+u.device:''); store.set('used',used); } } }
