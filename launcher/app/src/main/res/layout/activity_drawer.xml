@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:orientation="vertical"
+    android:layout_width="match_parent" android:layout_height="match_parent" android:padding="12dp" android:fitsSystemWindows="true">
+    <EditText android:id="@+id/search" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Alkalmazás keresése…"
+        android:textColor="#FFFFFF" android:textColorHint="#99FFFFFF" android:backgroundTint="#FFB300" android:inputType="text" android:imeOptions="actionSearch" android:singleLine="true"/>
+    <GridView android:id="@+id/grid" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"
+        android:numColumns="4" android:verticalSpacing="12dp" android:horizontalSpacing="4dp" android:stretchMode="columnWidth" android:layout_marginTop="8dp"/>
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Hosszan nyomva: alkalmazás adatai · Vissza: terminál" android:textColor="#88FFFFFF" android:textSize="12sp" android:gravity="center" android:paddingTop="6dp"/>
+</LinearLayout>

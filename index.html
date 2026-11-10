@@ -321,7 +321,7 @@ html.night .dvItem.text{color:#eee}
     <div class="log" id="noteLog"></div>
     <div class="sys">
       <div class="syshd" data-t="sysHd">Rendszer</div>
-      <div class="sysrow"><span data-t="sysApp">Alkalmazás</span><span data-t="sysAppVal">Belépőjegy terminál v2.6.0</span></div>
+      <div class="sysrow"><span data-t="sysApp">Alkalmazás</span><span data-t="sysAppVal">Belépőjegy terminál v2.7.0</span></div>
       <div class="sysrow"><span data-t="sysTermL">Terminál</span><span id="sysTerm">T-0412</span></div>
       <div class="sysrow"><span data-t="sysInsp">Jegyellenőr</span><span id="sysId"></span></div>
       <div class="sysrow"><span data-t="sysStartL">Szolgálat kezdete</span><span id="sysStart"></span></div>
@@ -356,6 +356,10 @@ html.night .dvItem.text{color:#eee}
     <label>Elutasító felirat (érvénytelen jegynél)<input id="sDeny" placeholder="Belépés nem engedélyezett"></label>
     <label>Felirat a szkenner alatt<input id="sCap" placeholder="Olvassa be a belépőjegy kódját"></label>
     <label style="flex-direction:row;align-items:center;gap:10px"><input type="checkbox" id="sPreview" style="width:auto"> Kamera előnézet mutatása (alap: rejtve, a szkenner a háttérben fut)</label>
+    <div class="syshd" style="margin:4px 0 0">Szerver (központi előzmények)</div>
+    <label>Szerver címe (pl. http://192.168.1.20:8787 – üres = nincs szerver)<input id="sSrv" placeholder="http://192.168.1.20:8787" inputmode="url"></label>
+    <label>Szerver kulcs (ugyanaz, mint a szerver-appban)<input id="sSrvKey" placeholder="kulcs"></label>
+    <div class="dlhint" id="sSrvState">A terminál minden beolvasást beküld a szervernek, és a szerver tudja, ha egy jegyet másik terminálon már felhasználtak.</div>
     <div class="syshd" style="margin:4px 0 0">Dátum ellenőrzés</div>
     <label style="flex-direction:row;align-items:center;gap:10px"><input type="checkbox" id="sDateCheck" style="width:auto"> A jegyen lévő dátumot ellenőrzi: csak aznap érvényes</label>
     <div class="btns" style="margin:0"><label style="flex:1">Hajnali türelmi idő (óra)<input id="sGrace" inputmode="numeric" placeholder="6"></label><label style="flex-direction:row;align-items:center;gap:10px;flex:2"><input type="checkbox" id="sDateReq" style="width:auto"> Dátum nélküli jegy = érvénytelen</label></div>
@@ -626,7 +630,7 @@ html.night .dvItem.text{color:#eee}
     emptyList:['Üres lista szövege','Még nincs beolvasás. Tartsa a jegy kódját a keretbe.'],
     manualTitle:['Kézi bevitel – cím','Kézi bevitel'], manualLabel:['Kézi bevitel – mező','Jegy kódja / sorszáma'], manualOk:['Kézi bevitel – gomb','Ellenőriz'], cancel:['Mégse gomb','Mégse'], close:['Bezár gomb','Bezár'],
     logTitle:['Napló – cím','Napló'], noteLabel:['Napló – új bejegyzés','Új bejegyzés'], noteSave:['Napló – rögzítés gomb','Rögzítés'], clearBtn:['Törlés gomb','Beolvasások és napló törlése'], instBtn:['Telepítés gomb','⤓ Telepítés a kezdőképernyőre'],
-    sysHd:['Rendszer panel – cím','Rendszer'], sysApp:['Rendszer – alkalmazás','Alkalmazás'], sysAppVal:['Rendszer – alkalmazás neve/verzió','Belépőjegy terminál v2.6.0'], sysTermL:['Rendszer – terminál','Terminál'], sysInsp:['Rendszer – ellenőr','Jegyellenőr'], sysStartL:['Rendszer – szolgálat kezdete','Szolgálat kezdete'], sysCountL:['Rendszer – számláló','Beengedve / elutasítva'],
+    sysHd:['Rendszer panel – cím','Rendszer'], sysApp:['Rendszer – alkalmazás','Alkalmazás'], sysAppVal:['Rendszer – alkalmazás neve/verzió','Belépőjegy terminál v2.7.0'], sysTermL:['Rendszer – terminál','Terminál'], sysInsp:['Rendszer – ellenőr','Jegyellenőr'], sysStartL:['Rendszer – szolgálat kezdete','Szolgálat kezdete'], sysCountL:['Rendszer – számláló','Beengedve / elutasítva'],
     resTitle:['Eredmény – fejléc','Ellenőrzés eredménye'], codeLabel:['Eredmény – jegykód felirat','Jegykód:'], txn:['Eredmény – tranzakció felirat','Tranzakció'], validityLabel:['Eredmény – érvényesség felirat','Érvényesség:'],
     vValid:['Ítélet: érvényes','ÉRVÉNYES'], vInvalid:['Ítélet: érvénytelen','ÉRVÉNYTELEN'], vExpired:['Ítélet: lejárt','LEJÁRT'], vUsed:['Ítélet: már felhasznált','MÁR FELHASZNÁLT'],
     kDate:['Sor: Jegy dátuma','Jegy dátuma'], whyWrongDay:['Indok: más napra szól','A jegy más napra szól:'], whyNoDate:['Indok: nincs dátum a jegyen','A jegyen nincs dátum'],
@@ -778,7 +782,7 @@ html.night .dvItem.text{color:#eee}
 
   /* result screen */
   let current=null;
-  function showResult(text,isTest){
+  function showResultNow(text,isTest){
     const t=parseTicket(text), v=validate(t), now=new Date();
     if(isTest){ t.type=(t.type||'')+' (TESZT)'; }
     current={t,v};
@@ -789,13 +793,30 @@ html.night .dvItem.text{color:#eee}
     kv('kvResult',[[tx('kRes'),v.ok?tx('resOk'):v.verdict],[tx('kWhy'),v.ok?'':v.why],[tx('kName'),t.name],[tx('kType'),t.type],[tx('kSerial'),shortCode(t.code)],[tx('kDate'),t.day?fmtDay(t.day):''],[tx('kFrom'),t.start?fmtFull(t.start):''],[tx('kTo'),t.passMode?tx('passValid'):(t.end?fmtFull(t.end):'')],[tx('kDisc'),t.disc]]);
     kv('kvCheck',[[tx('kMode'),t.passMode?tx('modeBerlet'):tx('modeJegy')],[tx('kChecked'),fmtFullS(now)],[tx('kPlace'),cfg.sub],[tx('kDevice'),cfg.term],[tx('kInsp'),cfg.id],v.ok?[tx('kTxn'),txnS]:[tx('kFine'),ftFine(cfg.fine)]]);
     $('rMain').textContent=v.ok?tx('btnNext'):tx('btnFine'); $('rSec').textContent=tx('btnOverride'); $('rSec').hidden=v.ok;
-    hist.unshift({name:t.name,type:t.type,time:fmtHM(now),ok:v.ok,let:false,fine:false,code:t.code,verdict:v.verdict}); store.set('hist',hist); renderRows();
+    const sid=uuid(); hist.unshift({id:sid,name:t.name,type:t.type,time:fmtHM(now),ok:v.ok,let:false,fine:false,code:t.code,verdict:v.verdict}); store.set('hist',hist); renderRows();
+    srvQueue({id:sid,ts:now.toISOString(),code:t.code,name:t.name||'',type:t.type||'',ok:v.ok,kind:v.kind,verdict:v.verdict,why:v.ok?'':v.why,day:t.day?fmtDay(t.day):'',device:cfg.term,inspector:cfg.id,place:cfg.sub,mode:cfg.mode,test:!!isTest,txn:v.ok?txnS:''});
     try{ navigator.vibrate&&navigator.vibrate(v.ok?40:90); }catch(e){}
     beep(v.ok);
   }
+  /* ---- central server sync ---- */
+  const uuid=()=>Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8);
+  let outbox=store.get('outbox',[]), srvLast='';
+  function srvStateText(){ if(!cfg.serverUrl) return 'Nincs szerver beállítva. A terminál minden beolvasást beküld a szervernek, és a szerver tudja, ha egy jegyet másik terminálon már felhasználtak.'; return 'Szerver: '+cfg.serverUrl+' · várakozó: '+outbox.length+(srvLast?' · '+srvLast:''); }
+  function srvFetch(path,opt,ms){ if(!cfg.serverUrl) return Promise.reject(new Error('no server')); const c=new AbortController(); const t=setTimeout(()=>c.abort(),ms||4000); const o=Object.assign({signal:c.signal,headers:Object.assign({'Content-Type':'application/json','X-Key':cfg.serverKey||''},(opt&&opt.headers)||{})},opt||{}); return fetch(cfg.serverUrl+path,o).finally(()=>clearTimeout(t)); }
+  function srvQueue(ev){ if(!cfg.serverUrl) return; outbox.push(ev); if(outbox.length>5000) outbox=outbox.slice(-5000); store.set('outbox',outbox); srvFlush(); }
+  let flushing=false;
+  async function srvFlush(){ if(flushing||!cfg.serverUrl||!outbox.length||!navigator.onLine) return; flushing=true; try{ const batch=outbox.slice(0,200); const r=await srvFetch('/api/scan',{method:'POST',body:JSON.stringify(batch)},8000); if(r.ok){ outbox=outbox.slice(batch.length); store.set('outbox',outbox); srvLast='küldve '+fmtHM(new Date()); } else srvLast='hiba '+r.status; }catch(e){ srvLast='nem elérhető'; } flushing=false; const el=$('sSrvState'); if(el) el.textContent=srvStateText(); if(outbox.length&&srvLast.startsWith('küldve')) setTimeout(srvFlush,50); }
+  setInterval(srvFlush,20000); addEventListener('online',srvFlush); setTimeout(srvFlush,1500);
+  async function srvUsedCheck(code){ if(!cfg.serverUrl||!navigator.onLine) return null; try{ const r=await srvFetch('/api/used?code='+encodeURIComponent(code),{},1800); if(!r.ok) return null; const j=await r.json(); return j&&j.used?j.used:null; }catch(e){ return null; } }
+  let scanBusy=false;
+  async function showResult(text,isTest){ if(scanBusy) return; scanBusy=true; try{
+      if(!isTest&&cfg.serverUrl){ const t0=parseTicket(text); const u=await srvUsedCheck(t0.code); if(u){ const used=store.get('used',{}); if(!used[t0.code]){ used[t0.code]=(u.time||'')+(u.device?' · '+u.device:''); store.set('used',used); } } }
+      showResultNow(text,isTest);
+    } finally{ scanBusy=false; } }
+  window.jegyScan=function(code){ if(code&&String(code).trim()) showResult(String(code).trim()); };
   function closeResult(){ document.querySelector('.app').className='app'; $('res').hidden=true; $('idle').hidden=false; $('codeInput').value=''; last=''; if(cfg.hwScan){ hwInit(); return; } if(!running) startCamera(); }
-  $('rMain').addEventListener('click',()=>{ if(current&&!current.v.ok&&hist[0]){ hist[0].fine=true; store.set('hist',hist); const n=store.get('notes',[]); n.unshift({t:fmtFull(new Date()),x:'Pótdíj '+ftFine(cfg.fine)+' · '+(current.t.name?current.t.name+' · ':'')+shortCode(current.t.code)+' · '+cfg.id}); store.set('notes',n); renderRows(); } closeResult(); });
-  $('rSec').addEventListener('click',()=>{ if(current&&!current.v.ok){ hist[0].let=true; const used=store.get('used',{}); used[current.t.code]=fmtFull(new Date()); store.set('used',used); store.set('hist',hist); const n=store.get('notes',[]); n.unshift({t:fmtFull(new Date()),x:'Kézi beengedés · '+(current.t.name?current.t.name+' · ':'')+shortCode(current.t.code)+' · '+cfg.id}); store.set('notes',n); renderRows(); } closeResult(); });
+  $('rMain').addEventListener('click',()=>{ if(current&&!current.v.ok&&hist[0]){ hist[0].fine=true; store.set('hist',hist); srvQueue({id:hist[0].id,update:true,fine:true,fineAmount:cfg.fine,ts:new Date().toISOString()}); const n=store.get('notes',[]); n.unshift({t:fmtFull(new Date()),x:'Pótdíj '+ftFine(cfg.fine)+' · '+(current.t.name?current.t.name+' · ':'')+shortCode(current.t.code)+' · '+cfg.id}); store.set('notes',n); renderRows(); } closeResult(); });
+  $('rSec').addEventListener('click',()=>{ if(current&&!current.v.ok){ hist[0].let=true; srvQueue({id:hist[0].id,update:true,let:true,ts:new Date().toISOString()}); const used=store.get('used',{}); used[current.t.code]=fmtFull(new Date()); store.set('used',used); store.set('hist',hist); const n=store.get('notes',[]); n.unshift({t:fmtFull(new Date()),x:'Kézi beengedés · '+(current.t.name?current.t.name+' · ':'')+shortCode(current.t.code)+' · '+cfg.id}); store.set('notes',n); renderRows(); } closeResult(); });
   $('navBack').addEventListener('click',closeResult);
 
   /* sound */
@@ -918,7 +939,7 @@ html.night .dvItem.text{color:#eee}
 
   /* settings incl. logo upload (stored as a small data URL) */
   let pendingLogo=null;
-  $('navSet').addEventListener('click',()=>{ $('sTitle').value=cfg.title; $('sSub').value=cfg.sub; $('sWelcome').value=cfg.welcome; $('sDeny').value=cfg.deny; $('sId').value=cfg.id; $('sCap').value=cfg.cap; $('sTerm').value=cfg.term; $('sAppName').value=cfg.appName||''; $('sShift').value=cfg.shift||''; $('sI1l').value=cfg.info1l||''; $('sI1v').value=cfg.info1v||''; $('sI2l').value=cfg.info2l||''; $('sI2v').value=cfg.info2v||''; $('sFine').value=cfg.fine; $('sPreview').checked=!!cfg.preview; $('sHw').checked=!!cfg.hwScan; $('sDateCheck').checked=cfg.dateCheck!==false; $('sGrace').value=cfg.graceH==null?6:cfg.graceH; $('sDateReq').checked=!!cfg.dateRequire; $('sNight').value=cfg.night||'off'; $('sNightFrom').value=cfg.nightFrom||'20:00'; $('sNightTo').value=cfg.nightTo||'06:00'; $('sDim').value=cfg.dim||''; $('sSpTitle').value=cfg.spTitle||''; $('sSpSub').value=cfg.spSub||''; $('sSpSec').value=cfg.spSec;
+  $('navSet').addEventListener('click',()=>{ $('sTitle').value=cfg.title; $('sSub').value=cfg.sub; $('sWelcome').value=cfg.welcome; $('sDeny').value=cfg.deny; $('sId').value=cfg.id; $('sCap').value=cfg.cap; $('sTerm').value=cfg.term; $('sAppName').value=cfg.appName||''; $('sShift').value=cfg.shift||''; $('sI1l').value=cfg.info1l||''; $('sI1v').value=cfg.info1v||''; $('sI2l').value=cfg.info2l||''; $('sI2v').value=cfg.info2v||''; $('sFine').value=cfg.fine; $('sPreview').checked=!!cfg.preview; $('sHw').checked=!!cfg.hwScan; $('sSrv').value=cfg.serverUrl||''; $('sSrvKey').value=cfg.serverKey||''; $('sSrvState').textContent=srvStateText(); $('sDateCheck').checked=cfg.dateCheck!==false; $('sGrace').value=cfg.graceH==null?6:cfg.graceH; $('sDateReq').checked=!!cfg.dateRequire; $('sNight').value=cfg.night||'off'; $('sNightFrom').value=cfg.nightFrom||'20:00'; $('sNightTo').value=cfg.nightTo||'06:00'; $('sDim').value=cfg.dim||''; $('sSpTitle').value=cfg.spTitle||''; $('sSpSub').value=cfg.spSub||''; $('sSpSec').value=cfg.spSec;
     pendingLogo=cfg.logo||null; $('sLogoPrev').hidden=!pendingLogo; if(pendingLogo) $('sLogoPrev').src=pendingLogo;
     pendingIcon=cfg.icon||null; $('sIconPrev').hidden=false; $('sIconPrev').src=pendingIcon||DEFAULT_ICON; openSheet('setBox'); });
   let pendingIcon=null;
@@ -932,7 +953,7 @@ html.night .dvItem.text{color:#eee}
       c.getContext('2d').drawImage(img,0,0,c.width,c.height); pendingLogo=c.toDataURL('image/png'); $('sLogoPrev').src=pendingLogo; $('sLogoPrev').hidden=false; URL.revokeObjectURL(url); $('sLogo').value=''; };
     img.src=url; });
   $('sLogoDel').addEventListener('click',()=>{ pendingLogo=null; $('sLogoPrev').hidden=true; });
-  $('setSave').addEventListener('click',()=>{ cfg.title=$('sTitle').value.trim()||'Jegyellenőrzés'; cfg.sub=$('sSub').value.trim(); cfg.welcome=$('sWelcome').value.trim(); cfg.deny=$('sDeny').value.trim(); cfg.id=$('sId').value.trim()||'#0001'; cfg.cap=$('sCap').value.trim()||'Olvassa be a belépőjegy kódját'; cfg.term=$('sTerm').value.trim()||'T-0412'; cfg.appName=$('sAppName').value.trim(); cfg.shift=$('sShift').value.trim(); cfg.info1l=$('sI1l').value.trim(); cfg.info1v=$('sI1v').value.trim(); cfg.info2l=$('sI2l').value.trim(); cfg.info2v=$('sI2v').value.trim(); cfg.fine=parseInt($('sFine').value,10)||0; cfg.preview=$('sPreview').checked; const hwWas=!!cfg.hwScan; cfg.hwScan=$('sHw').checked; cfg.dateCheck=$('sDateCheck').checked; cfg.graceH=parseInt($('sGrace').value,10); if(isNaN(cfg.graceH)) cfg.graceH=6; cfg.dateRequire=$('sDateReq').checked; cfg.night=$('sNight').value; cfg.nightFrom=$('sNightFrom').value; cfg.nightTo=$('sNightTo').value; cfg.dim=parseInt($('sDim').value,10)||0; applyNight(); applyPreview(); if(cfg.hwScan!==hwWas){ if(cfg.hwScan){ if(running) stopCamera(); hwInit(); } else startCamera(); } cfg.spTitle=$('sSpTitle').value.trim(); cfg.spSub=$('sSpSub').value.trim(); cfg.spSec=parseFloat(String($('sSpSec').value).replace(',','.')); if(isNaN(cfg.spSec)) cfg.spSec=2; cfg.logo=pendingLogo||''; cfg.icon=pendingIcon||'';
+  $('setSave').addEventListener('click',()=>{ cfg.title=$('sTitle').value.trim()||'Jegyellenőrzés'; cfg.sub=$('sSub').value.trim(); cfg.welcome=$('sWelcome').value.trim(); cfg.deny=$('sDeny').value.trim(); cfg.id=$('sId').value.trim()||'#0001'; cfg.cap=$('sCap').value.trim()||'Olvassa be a belépőjegy kódját'; cfg.term=$('sTerm').value.trim()||'T-0412'; cfg.appName=$('sAppName').value.trim(); cfg.shift=$('sShift').value.trim(); cfg.info1l=$('sI1l').value.trim(); cfg.info1v=$('sI1v').value.trim(); cfg.info2l=$('sI2l').value.trim(); cfg.info2v=$('sI2v').value.trim(); cfg.fine=parseInt($('sFine').value,10)||0; cfg.preview=$('sPreview').checked; const hwWas=!!cfg.hwScan; cfg.hwScan=$('sHw').checked; cfg.serverUrl=$('sSrv').value.trim().replace(/\/+$/,''); cfg.serverKey=$('sSrvKey').value.trim(); setTimeout(srvFlush,100); cfg.dateCheck=$('sDateCheck').checked; cfg.graceH=parseInt($('sGrace').value,10); if(isNaN(cfg.graceH)) cfg.graceH=6; cfg.dateRequire=$('sDateReq').checked; cfg.night=$('sNight').value; cfg.nightFrom=$('sNightFrom').value; cfg.nightTo=$('sNightTo').value; cfg.dim=parseInt($('sDim').value,10)||0; applyNight(); applyPreview(); if(cfg.hwScan!==hwWas){ if(cfg.hwScan){ if(running) stopCamera(); hwInit(); } else startCamera(); } cfg.spTitle=$('sSpTitle').value.trim(); cfg.spSub=$('sSpSub').value.trim(); cfg.spSec=parseFloat(String($('sSpSec').value).replace(',','.')); if(isNaN(cfg.spSec)) cfg.spSec=2; cfg.logo=pendingLogo||''; cfg.icon=pendingIcon||'';
     store.set('cfg',cfg); drawHeader(); applyIcon(); closeSheets(); });
 
   /* test scans */

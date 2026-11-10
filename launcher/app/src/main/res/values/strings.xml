@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Jegyterminál</string>
+    <string name="default_url">https://bkvbuszozo0108-alt.github.io/jegy-terminal/</string>
+    <string name="default_pin">0000</string>
+</resources>

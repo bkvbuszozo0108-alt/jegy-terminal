@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/root"
+    android:layout_width="match_parent" android:layout_height="match_parent" android:background="#4A148C">
+    <WebView android:id="@+id/web" android:layout_width="match_parent" android:layout_height="match_parent"/>
+    <LinearLayout android:id="@+id/offline" android:visibility="gone" android:orientation="vertical" android:gravity="center"
+        android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/offline_bg" android:padding="32dp">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Nincs kapcsolat" android:textColor="#FFFFFF" android:textSize="22sp" android:textStyle="bold"/>
+        <TextView android:id="@+id/offlineMsg" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="A terminál oldala nem tölthető be. Ellenőrizd a Wi-Fi / mobilnet kapcsolatot." android:textColor="#DDFFFFFF" android:textSize="14sp" android:gravity="center" android:layout_marginTop="8dp"/>
+        <Button android:id="@+id/retry" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Újra" android:layout_marginTop="20dp"/>
+        <Button android:id="@+id/offlineSettings" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Beállítások" android:layout_marginTop="8dp"/>
+    </LinearLayout>
+    <View android:id="@+id/handle" android:layout_width="64dp" android:layout_height="6dp" android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="6dp" android:background="@drawable/handle_bg" android:alpha="0.7"/>
+</FrameLayout>
