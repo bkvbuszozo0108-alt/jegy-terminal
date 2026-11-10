@@ -1,5 +1,5 @@
 /*  Jegyterminál – webes szerver Google Táblázatban (Apps Script)
-    Telepítés: lásd README.md ebben a mappában. A KULCS-ot írd át, ugyanezt írod a terminálokba.  */
+    Telepítés: lásd README.md ebben a mappában. A KULCS csak a központi oldalhoz kell (a terminálok kulcs nélkül küldenek).  */
 var KULCS = 'VALTOZTASD-MEG';          // ← saját kulcs (betűk/számok)
 var SHEET = 'Beolvasasok';
 var COLS = ['id','ts','device','inspector','place','code','name','type','day','ok','kind','verdict','why','fine','let','txn','test','mode'];
@@ -24,8 +24,8 @@ function dayOf_(iso){ var d=new Date(iso); if(isNaN(d)) return ''; return Utilit
 
 function doPost(e){
   var body; try{ body=JSON.parse(e.postData.contents); }catch(x){ return out_({error:'rossz JSON'}); }
-  if(!key_(e,body)) return out_({error:'hibás kulcs'});
-  if(body.op==='setconfig'){ if(body.global) setGlobal_(body.global); if(typeof body.lock==='boolean') setGlobal_({lock:body.lock}); if(body.devices){ var sh=tsheet_(), all=devices_(); Object.keys(body.devices).forEach(function(k){ var d=all[k]; if(!d) return; var u=body.devices[k]; if(u.inspector) sh.getRange(d._row,2).setValue(u.inspector); if(u.place&&M3.indexOf(u.place)>=0) sh.getRange(d._row,3).setValue(u.place); }); } if(body.remove){ var all2=devices_(); if(all2[body.remove]) tsheet_().deleteRow(all2[body.remove]._row); } return out_({ok:true}); }
+  /* terminál-beküldés kulcs nélkül megy; a beállítások módosításához kell a kulcs */
+  if(body.op==='setconfig'){ if(!key_(e,body)) return out_({error:'hibás kulcs'}); if(body.global) setGlobal_(body.global); if(typeof body.lock==='boolean') setGlobal_({lock:body.lock}); if(body.devices){ var sh=tsheet_(), all=devices_(); Object.keys(body.devices).forEach(function(k){ var d=all[k]; if(!d) return; var u=body.devices[k]; if(u.inspector) sh.getRange(d._row,2).setValue(u.inspector); if(u.place&&M3.indexOf(u.place)>=0) sh.getRange(d._row,3).setValue(u.place); }); } if(body.remove){ var all2=devices_(); if(all2[body.remove]) tsheet_().deleteRow(all2[body.remove]._row); } return out_({ok:true}); }
   var evs=body.events||body; if(!Array.isArray(evs)) evs=[evs];
   var lock=LockService.getScriptLock(); lock.waitLock(20000);
   try{
@@ -49,8 +49,8 @@ function doGet(e){
 function api(a,p){ return handle_(a,p||{}); }
 function handle_(a,p){
   if(a==='info') return {title:SpreadsheetApp.getActiveSpreadsheet().getName(),needKey:true};
-  if((p.key||'')!==KULCS) return {error:'hibás kulcs'};
   if(a==='config'){ var dev=String(p.device||''); if(!dev) return {error:'device?'}; var lock=LockService.getScriptLock(); lock.waitLock(10000); try{ return configFor_(dev); } finally{ lock.releaseLock(); } }
+  if((p.key||'')!==KULCS&&a!=='used') return {error:'hibás kulcs'};
   if(a==='adminconfig') return {global:getGlobal_(),lock:getGlobal_().lock!==false&&getGlobal_().lock!=='false',devices:devices_(),M3:M3};
   if(a==='setconfig'){ var b=typeof p.json==='string'?JSON.parse(p.json):p.json; b.key=KULCS; var fake={postData:{contents:JSON.stringify(Object.assign({op:'setconfig'},b))},parameter:{}}; doPost(fake); return {ok:true}; }
   var all=rows_();
