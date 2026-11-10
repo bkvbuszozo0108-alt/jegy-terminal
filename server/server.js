@@ -57,7 +57,8 @@ http.createServer(async (req,res)=>{
   if(p.startsWith('/terminal/')){ const f=path.join(ROOT,'..',path.basename(p)); if(fs.existsSync(f)&&fs.statSync(f).isFile()){ const ext=path.extname(f); const T={'.png':'image/png','.json':'application/json','.js':'text/javascript','.html':'text/html; charset=utf-8'}; return send(res,200,fs.readFileSync(f),T[ext]||'application/octet-stream'); } return send(res,404,'nincs','text/plain'); }
   if(p==='/api/info') return send(res,200,{title:CFG.title,ips:ips(),port:PORT,needKey:true});
   const key=req.headers['x-key']||q.key||'';
-  if(key!==CFG.key) return send(res,401,{error:'hibás kulcs'});
+  const open=(p==='/api/scan'&&req.method==='POST')||p==='/api/used'||(p==='/api/config'&&req.method==='GET');
+  if(!open&&key!==CFG.key) return send(res,401,{error:'hibás kulcs'});
   try{
     if(p==='/api/scan'&&req.method==='POST'){ const b=await body(req); const arr=Array.isArray(b)?b:[b]; let n=0; for(const ev of arr){ const r=applyEvent(ev,true); if(r){ n++; touchDevice(r,ip); } } return send(res,200,{ok:true,n}); }
     if(p==='/api/used'){ const code=String(q.code||''); let hit=null; for(const r of scans.values()){ if(r.test||r.code!==code) continue; if(r.ok||r.let){ if(!hit||(r.ts>hit.ts)) hit=r; } } return send(res,200,{used:hit?{time:fmtHu(hit.ts),device:hit.device||'',name:hit.name||''}:null}); }
