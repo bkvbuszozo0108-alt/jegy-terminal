@@ -71,7 +71,7 @@ class MainActivity : Activity() {
 
     private fun setupGecko() {
         val rt = runtime(this)
-        val ua = "Mozilla/5.0 (Android " + android.os.Build.VERSION.RELEASE + "; Mobile; rv:144.0) Gecko/144.0 Firefox/144.0 JegyTerminalLauncher/2.2" + (if (isZebra()) " Zebra" else "")
+        val ua = "Mozilla/5.0 (Android " + android.os.Build.VERSION.RELEASE + "; Mobile; rv:144.0) Gecko/144.0 Firefox/144.0 JegyTerminalLauncher/2.2" + (if (hwMode()) " Zebra" else "")
         session = GeckoSession(GeckoSessionSettings.Builder().usePrivateMode(false).userAgentOverride(ua).build())
         session.permissionDelegate = object : GeckoSession.PermissionDelegate {
             override fun onAndroidPermissionsRequest(s: GeckoSession, permissions: Array<out String>?, callback: GeckoSession.PermissionDelegate.Callback) {
@@ -111,8 +111,11 @@ class MainActivity : Activity() {
             if (ext != null) session.webExtensionController.setMessageDelegate(ext, object : WebExtension.MessageDelegate {
                 override fun onConnect(p: WebExtension.Port) {
                     port = p
-                    p.setDelegate(object : WebExtension.PortDelegate { override fun onDisconnect(pp: WebExtension.Port) { if (port == pp) port = null } })
-                    try { p.postMessage(JSONObject().put("hw", isZebra()).put("dev", android.os.Build.MANUFACTURER + " " + android.os.Build.MODEL)) } catch (e: Exception) {}
+                    p.setDelegate(object : WebExtension.PortDelegate {
+                        override fun onDisconnect(pp: WebExtension.Port) { if (port == pp) port = null }
+                        override fun onPortMessage(m: Any, pp: WebExtension.Port) { if (m is JSONObject && m.optBoolean("trigger")) softScan(true) }
+                    })
+                    try { p.postMessage(JSONObject().put("hw", hwMode()).put("dev", android.os.Build.MANUFACTURER + " " + android.os.Build.MODEL)) } catch (e: Exception) {}
                     pendingScan?.let { inject(it) }; pendingScan = null
                 }
             }, "jt")
@@ -124,15 +127,20 @@ class MainActivity : Activity() {
         if (req == 2) { val cb = permCb; permCb = null; if (results.all { it == PackageManager.PERMISSION_GRANTED }) cb?.grant() else cb?.reject() }
     }
 
-    /** Zebra DataWedge profil: a szkenner Intenttel küldi a kódot ennek az appnak (Intent + billentyűzet-mód is: amelyik előbb ér oda, a másikat a web-app szűri). */
+    /** Zebra DataWedge profil – pluginonként külön üzenettel (a régi, 6.x DataWedge csak így fogadja), majd bekapcsolás és profilváltás. */
     private fun setupDataWedge() {
         try {
             val app = Bundle().apply { putString("PACKAGE_NAME", packageName); putStringArray("ACTIVITY_LIST", arrayOf("*")) }
+            fun cfg(plugin: Bundle, mode: String = "CREATE_IF_NOT_EXIST") = Bundle().apply {
+                putString("PROFILE_NAME", "JegyTerminal"); putString("PROFILE_ENABLED", "true"); putString("CONFIG_MODE", mode)
+                putParcelableArray("APP_LIST", arrayOf(app)); putBundle("PLUGIN_CONFIG", plugin)
+            }
             val barcode = Bundle().apply {
                 putString("PLUGIN_NAME", "BARCODE"); putString("RESET_CONFIG", "true")
                 putBundle("PARAM_LIST", Bundle().apply {
-                    putString("scanner_selection", "auto"); putString("scanner_input_enabled", "true")
-                    putString("decoder_qrcode", "true"); putString("decoder_datamatrix", "true"); putString("decoder_pdf417", "true"); putString("decoder_code128", "true"); putString("decoder_aztec", "true"); putString("decoder_ean13", "true"); putString("decoder_ean8", "true"); putString("decoder_code39", "true"); putString("decoder_i2of5", "true"); putString("decoder_upca", "true"); putString("decoder_micropdf", "true")
+                    putString("scanner_selection", "auto"); putString("scanner_input_enabled", "true"); putString("aim_type", "0"); putString("illumination_mode", "torch")
+                    putString("decoder_qrcode", "true"); putString("decoder_datamatrix", "true"); putString("decoder_pdf417", "true"); putString("decoder_code128", "true"); putString("decoder_aztec", "true")
+                    putString("decoder_ean13", "true"); putString("decoder_ean8", "true"); putString("decoder_code39", "true"); putString("decoder_i2of5", "true"); putString("decoder_upca", "true"); putString("decoder_micropdf", "true")
                 })
             }
             val intentOut = Bundle().apply {
@@ -143,13 +151,36 @@ class MainActivity : Activity() {
                 putString("PLUGIN_NAME", "KEYSTROKE"); putString("RESET_CONFIG", "true")
                 putBundle("PARAM_LIST", Bundle().apply { putString("keystroke_output_enabled", "true"); putString("keystroke_action_char", "13"); putString("keystroke_delay_extended_ascii", "0") })
             }
-            val profile = Bundle().apply {
-                putString("PROFILE_NAME", "JegyTerminal"); putString("PROFILE_ENABLED", "true"); putString("CONFIG_MODE", "CREATE_IF_NOT_EXIST")
-                putParcelableArray("APP_LIST", arrayOf(app))
-                putParcelableArrayList("PLUGIN_CONFIG", arrayListOf(barcode, intentOut, keys))
-            }
-            sendBroadcast(Intent("com.symbol.datawedge.api.ACTION").putExtra("com.symbol.datawedge.api.SET_CONFIG", profile))
+            dw("com.symbol.datawedge.api.ENABLE_DATAWEDGE", true)
+            sendBroadcast(Intent("com.symbol.datawedge.api.ACTION_ENABLEDATAWEDGE").putExtra("com.symbol.datawedge.api.EXTRA_PARAMETER", true))
+            sendBroadcast(Intent("com.symbol.datawedge.api.ACTION").putExtra("com.symbol.datawedge.api.SET_CONFIG", cfg(barcode)))
+            sendBroadcast(Intent("com.symbol.datawedge.api.ACTION").putExtra("com.symbol.datawedge.api.SET_CONFIG", cfg(intentOut, "UPDATE")))
+            sendBroadcast(Intent("com.symbol.datawedge.api.ACTION").putExtra("com.symbol.datawedge.api.SET_CONFIG", cfg(keys, "UPDATE")))
+            dw("com.symbol.datawedge.api.SWITCH_TO_PROFILE", "JegyTerminal")
+            dw("com.symbol.datawedge.api.SCANNER_INPUT_PLUGIN", "ENABLE_PLUGIN")
+            sendBroadcast(Intent("com.symbol.datawedge.api.ACTION_SCANNERINPUTPLUGIN").putExtra("com.symbol.datawedge.api.EXTRA_PARAMETER", "ENABLE_PLUGIN"))
         } catch (e: Exception) { /* nem Zebra eszköz */ }
+    }
+    private fun dw(key: String, value: Any) {
+        val i = Intent("com.symbol.datawedge.api.ACTION")
+        when (value) { is Boolean -> i.putExtra(key, value); else -> i.putExtra(key, value.toString()) }
+        sendBroadcast(i)
+    }
+    /** Szkennelés indítása programból (a terminál szkenner-paneljére koppintva vagy a tanított gombbal). */
+    private fun softScan(start: Boolean) {
+        val p = if (start) "START_SCANNING" else "STOP_SCANNING"
+        dw("com.symbol.datawedge.api.SOFT_SCAN_TRIGGER", p)
+        sendBroadcast(Intent("com.symbol.datawedge.api.ACTION_SOFTSCANTRIGGER").putExtra("com.symbol.datawedge.api.EXTRA_PARAMETER", p))
+    }
+    private val scanKeys get() = prefs.getStringSet("scanKeys", null) ?: setOf("102", "103", "280", "281", "106", "107", "290")
+    private var learnKey: ((Int) -> Unit)? = null
+    override fun dispatchKeyEvent(e: KeyEvent): Boolean {
+        learnKey?.let { if (e.action == KeyEvent.ACTION_DOWN) { it(e.keyCode); learnKey = null }; return true }
+        if (scanKeys.contains(e.keyCode.toString())) {
+            if (e.action == KeyEvent.ACTION_DOWN && e.repeatCount == 0) softScan(true)
+            return true
+        }
+        return super.dispatchKeyEvent(e)
     }
 
     private fun inject(code: String) {
@@ -174,12 +205,27 @@ class MainActivity : Activity() {
         val eu = EditText(this).apply { hint = "Terminál címe (URL)"; setText(url); inputType = InputType.TYPE_TEXT_VARIATION_URI }
         val ep = EditText(this).apply { hint = "Új PIN (üres = marad)"; inputType = InputType.TYPE_CLASS_NUMBER }
         lay.addView(eu); lay.addView(ep)
-        AlertDialog.Builder(this).setTitle("Jegyterminál launcher").setView(lay)
+        val hw = android.widget.Spinner(this); val hwOpts = listOf("auto" to "Szkenner: automatikus (Zebrán beépített, máshol kamera)", "on" to "Szkenner: mindig a beépített", "off" to "Szkenner: mindig kamera")
+        hw.adapter = android.widget.ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, hwOpts.map { it.second }); hw.setSelection(hwOpts.indexOfFirst { it.first == prefs.getString("hw", "auto") }.coerceAtLeast(0))
+        lay.addView(hw)
+        fun btn(t: String, f: () -> Unit) = android.widget.Button(this).apply { text = t; setOnClickListener { f() } }
+        lay.addView(btn("Szkenner beállítása újra (DataWedge profil)") { setupDataWedge(); Toast.makeText(this, "DataWedge profil elküldve", Toast.LENGTH_SHORT).show() })
+        lay.addView(btn("Próba-szkennelés (lézer)") { softScan(true) })
+        lay.addView(btn("Szkenner-gomb tanítása (" + scanKeys.joinToString(",") + ")") {
+            val d = AlertDialog.Builder(this).setTitle("Nyomd meg a szkenner gombját…").setMessage("Ha a gomb lenyomására semmi nem történik, azt a DataWedge kezeli – akkor a „Szkenner beállítása újra” gombot használd.").setNegativeButton("Mégse") { _, _ -> learnKey = null }.create()
+            val save: (Int) -> Unit = { code -> learnKey = null; prefs.edit().putStringSet("scanKeys", scanKeys + code.toString()).apply(); try { d.dismiss() } catch (e: Exception) {}; Toast.makeText(this, "Gomb mentve: $code", Toast.LENGTH_SHORT).show() }
+            d.setOnKeyListener { _, code, ev -> if (ev.action == KeyEvent.ACTION_DOWN && code != KeyEvent.KEYCODE_BACK) { save(code); true } else false }
+            learnKey = save; d.show()
+        })
+        lay.addView(btn("Gomb-tanítás törlése") { prefs.edit().remove("scanKeys").apply(); Toast.makeText(this, "Alap gombok", Toast.LENGTH_SHORT).show() })
+        lay.addView(btn("DataWedge app megnyitása") { try { startActivity(packageManager.getLaunchIntentForPackage("com.symbol.datawedge")) } catch (e: Exception) { Toast.makeText(this, "Nincs DataWedge ezen a készüléken", Toast.LENGTH_SHORT).show() } })
+        val sv = android.widget.ScrollView(this); sv.addView(lay)
+        AlertDialog.Builder(this).setTitle("Jegyterminál launcher").setView(sv)
             .setMessage(if (owner) "Kioszk mód: AKTÍV (device owner)" else "Kioszk mód: nincs (adb: dpm set-device-owner hu.jegyterminal.launcher/.AdminReceiver)")
             .setPositiveButton("Mentés") { _, _ ->
-                prefs.edit().putString("url", eu.text.toString().trim()).apply()
+                prefs.edit().putString("url", eu.text.toString().trim()).putString("hw", hwOpts[hw.selectedItemPosition].first).apply()
                 if (ep.text.isNotBlank()) prefs.edit().putString("pin", ep.text.toString().trim()).apply()
-                session.loadUri(url)
+                session.close(); setupGecko(); session.loadUri(url)
             }
             .setNeutralButton("Újratöltés") { _, _ -> session.reload(GeckoSession.LOAD_FLAGS_BYPASS_CACHE) }
             .setNegativeButton(if (owner) "Kioszk feloldása" else "Mégse") { _, _ -> if (owner) try { stopLockTask() } catch (e: Exception) {} }
@@ -207,6 +253,9 @@ class MainActivity : Activity() {
     override fun onNewIntent(intent: Intent?) { super.onNewIntent(intent); intent?.getStringExtra("com.symbol.datawedge.data_string")?.let { inject(it) } }
 
     override fun onBackPressed() { /* a terminálból nincs kilépés a Vissza gombbal */ }
+
+    /** beépített szkenner: "auto" = Zebrán igen, máshol kamera; "on" / "off" kézi */
+    private fun hwMode(): Boolean = when (prefs.getString("hw", "auto")) { "on" -> true; "off" -> false; else -> isZebra() }
 
     /** Zebra / Symbol / Motorola Solutions készülék (beépített vonalkódolvasóval)? */
     private fun isZebra(): Boolean { val m = (android.os.Build.MANUFACTURER + " " + android.os.Build.BRAND).lowercase(); return m.contains("zebra") || m.contains("symbol") || m.contains("motorola solutions") || packageManager.getLaunchIntentForPackage("com.symbol.datawedge") != null }

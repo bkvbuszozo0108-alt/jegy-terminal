@@ -1,6 +1,7 @@
 (function(){
   var port = browser.runtime.connectNative("jt");
   function page(){ return window.wrappedJSObject || window; }
+  window.addEventListener("message", function(e){ try{ if (e.data && e.data.jt === "trigger") port.postMessage({trigger:true}); }catch(x){} });
   port.onMessage.addListener(function(m){
     try{
       var w = page();
