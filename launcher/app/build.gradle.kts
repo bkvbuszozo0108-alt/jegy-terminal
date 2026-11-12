@@ -23,4 +23,5 @@ android {
     kotlinOptions { jvmTarget = "17" }
     sourceSets["main"].java.srcDirs("src/main/kotlin")
 }
+configurations.all { resolutionStrategy { force("androidx.core:core:1.13.1", "androidx.core:core-ktx:1.13.1", "androidx.annotation:annotation:1.8.2", "androidx.lifecycle:lifecycle-runtime:2.8.7", "androidx.lifecycle:lifecycle-common:2.8.7") } }
 dependencies { implementation("org.mozilla.geckoview:geckoview:144.0.20251027123126") }
