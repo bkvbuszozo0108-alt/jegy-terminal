@@ -56,7 +56,7 @@ class MainActivity : Activity() {
         })
         findViewById<View>(R.id.root).setOnTouchListener { _, ev -> gd.onTouchEvent(ev); false }
         web.setOnTouchListener { _, ev -> gd.onTouchEvent(ev); false }
-        if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED)
+        if (android.os.Build.VERSION.SDK_INT >= 23 && checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED)
             requestPermissions(arrayOf(Manifest.permission.CAMERA), 1)
         setupDataWedge()
         web.loadUrl(url)
