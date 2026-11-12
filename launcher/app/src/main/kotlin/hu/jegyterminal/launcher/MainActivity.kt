@@ -71,7 +71,8 @@ class MainActivity : Activity() {
 
     private fun setupGecko() {
         val rt = runtime(this)
-        session = GeckoSession(GeckoSessionSettings.Builder().usePrivateMode(false).build())
+        val ua = "Mozilla/5.0 (Android " + android.os.Build.VERSION.RELEASE + "; Mobile; rv:144.0) Gecko/144.0 Firefox/144.0 JegyTerminalLauncher/2.2" + (if (isZebra()) " Zebra" else "")
+        session = GeckoSession(GeckoSessionSettings.Builder().usePrivateMode(false).userAgentOverride(ua).build())
         session.permissionDelegate = object : GeckoSession.PermissionDelegate {
             override fun onAndroidPermissionsRequest(s: GeckoSession, permissions: Array<out String>?, callback: GeckoSession.PermissionDelegate.Callback) {
                 if (android.os.Build.VERSION.SDK_INT < 23 || permissions == null || permissions.all { checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED }) { callback.grant(); return }
@@ -123,7 +124,7 @@ class MainActivity : Activity() {
         if (req == 2) { val cb = permCb; permCb = null; if (results.all { it == PackageManager.PERMISSION_GRANTED }) cb?.grant() else cb?.reject() }
     }
 
-    /** Zebra DataWedge profil: a szkenner Intenttel küldi a kódot ennek az appnak (billentyűzet-mód kikapcsolva). */
+    /** Zebra DataWedge profil: a szkenner Intenttel küldi a kódot ennek az appnak (Intent + billentyűzet-mód is: amelyik előbb ér oda, a másikat a web-app szűri). */
     private fun setupDataWedge() {
         try {
             val app = Bundle().apply { putString("PACKAGE_NAME", packageName); putStringArray("ACTIVITY_LIST", arrayOf("*")) }
@@ -140,7 +141,7 @@ class MainActivity : Activity() {
             }
             val keys = Bundle().apply {
                 putString("PLUGIN_NAME", "KEYSTROKE"); putString("RESET_CONFIG", "true")
-                putBundle("PARAM_LIST", Bundle().apply { putString("keystroke_output_enabled", "false") })
+                putBundle("PARAM_LIST", Bundle().apply { putString("keystroke_output_enabled", "true"); putString("keystroke_action_char", "13"); putString("keystroke_delay_extended_ascii", "0") })
             }
             val profile = Bundle().apply {
                 putString("PROFILE_NAME", "JegyTerminal"); putString("PROFILE_ENABLED", "true"); putString("CONFIG_MODE", "CREATE_IF_NOT_EXIST")
