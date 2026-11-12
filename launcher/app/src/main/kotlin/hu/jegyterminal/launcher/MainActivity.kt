@@ -111,6 +111,7 @@ class MainActivity : Activity() {
                 override fun onConnect(p: WebExtension.Port) {
                     port = p
                     p.setDelegate(object : WebExtension.PortDelegate { override fun onDisconnect(pp: WebExtension.Port) { if (port == pp) port = null } })
+                    try { p.postMessage(JSONObject().put("hw", isZebra()).put("dev", android.os.Build.MANUFACTURER + " " + android.os.Build.MODEL)) } catch (e: Exception) {}
                     pendingScan?.let { inject(it) }; pendingScan = null
                 }
             }, "jt")
@@ -130,7 +131,7 @@ class MainActivity : Activity() {
                 putString("PLUGIN_NAME", "BARCODE"); putString("RESET_CONFIG", "true")
                 putBundle("PARAM_LIST", Bundle().apply {
                     putString("scanner_selection", "auto"); putString("scanner_input_enabled", "true")
-                    putString("decoder_qrcode", "true"); putString("decoder_datamatrix", "true"); putString("decoder_pdf417", "true"); putString("decoder_code128", "true"); putString("decoder_aztec", "true")
+                    putString("decoder_qrcode", "true"); putString("decoder_datamatrix", "true"); putString("decoder_pdf417", "true"); putString("decoder_code128", "true"); putString("decoder_aztec", "true"); putString("decoder_ean13", "true"); putString("decoder_ean8", "true"); putString("decoder_code39", "true"); putString("decoder_i2of5", "true"); putString("decoder_upca", "true"); putString("decoder_micropdf", "true")
                 })
             }
             val intentOut = Bundle().apply {
@@ -205,6 +206,9 @@ class MainActivity : Activity() {
     override fun onNewIntent(intent: Intent?) { super.onNewIntent(intent); intent?.getStringExtra("com.symbol.datawedge.data_string")?.let { inject(it) } }
 
     override fun onBackPressed() { /* a terminálból nincs kilépés a Vissza gombbal */ }
+
+    /** Zebra / Symbol / Motorola Solutions készülék (beépített vonalkódolvasóval)? */
+    private fun isZebra(): Boolean { val m = (android.os.Build.MANUFACTURER + " " + android.os.Build.BRAND).lowercase(); return m.contains("zebra") || m.contains("symbol") || m.contains("motorola solutions") || packageManager.getLaunchIntentForPackage("com.symbol.datawedge") != null }
 
     companion object {
         const val SCAN_ACTION = "hu.jegyterminal.SCAN"
