@@ -9,8 +9,9 @@ android {
         applicationId = "hu.jegyterminal.launcher"
         minSdk = 21
         targetSdk = 34
-        versionCode = 3
-        versionName = "1.2"
+        ndk { abiFilters += listOf("armeabi-v7a", "arm64-v8a") }
+        versionCode = 4
+        versionName = "2.0"
     }
     buildTypes {
         release {
@@ -22,4 +23,4 @@ android {
     kotlinOptions { jvmTarget = "17" }
     sourceSets["main"].java.srcDirs("src/main/kotlin")
 }
-dependencies { }
+dependencies { implementation("org.mozilla.geckoview:geckoview:144.0.20251027123126") }

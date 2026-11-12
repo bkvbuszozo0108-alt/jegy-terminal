@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/root"
     android:layout_width="match_parent" android:layout_height="match_parent" android:background="#4A148C">
-    <WebView android:id="@+id/web" android:layout_width="match_parent" android:layout_height="match_parent"/>
+    <org.mozilla.geckoview.GeckoView android:id="@+id/web" android:layout_width="match_parent" android:layout_height="match_parent"/>
     <LinearLayout android:id="@+id/offline" android:visibility="gone" android:orientation="vertical" android:gravity="center"
         android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/offline_bg" android:padding="32dp">
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Nincs kapcsolat" android:textColor="#FFFFFF" android:textSize="22sp" android:textStyle="bold"/>

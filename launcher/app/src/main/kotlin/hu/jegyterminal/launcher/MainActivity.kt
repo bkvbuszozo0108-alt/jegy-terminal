@@ -10,22 +10,27 @@ import android.net.Uri
 import android.os.Bundle
 import android.text.InputType
 import android.view.*
-import android.webkit.*
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.Toast
 import org.json.JSONObject
+import org.mozilla.geckoview.*
 
 /**
  * Jegyterminál launcher: kezdőképernyőként a jegyellenőr web-app fut teljes képernyőn.
- *  - alsó fogantyú / felhúzás: alkalmazás-fiók (Google, Chrome, Beállítások… minden telepített app)
- *  - fogantyú hosszan: beállítások (URL, PIN, kioszk)
- *  - Zebra DataWedge: a szkenner közvetlenül a web-appba küldi a kódot (window.jegyScan)
+ * A web-appot NEM a rendszer (sokszor elavult) WebView-ja, hanem a beépített GeckoView (Firefox-motor) futtatja,
+ * így Android 5–7-es, Play Áruház nélküli készülékeken (pl. Zebra TC56) is megy.
+ *  - felhúzás a képernyő aljáról: alkalmazás-fiók (minden telepített app)
+ *  - alul középen hosszan: beállítások (URL, PIN, kioszk)
+ *  - Zebra DataWedge: a szkenner Intenttel küldi a kódot → a beépített kiegészítőn át a web-appnak (window.jegyScan)
  *  - ha az app "device owner" (adb dpm set-device-owner), Lock Task kioszk módban fut
  */
 class MainActivity : Activity() {
-    private lateinit var web: WebView
-    private var fileCb: ValueCallback<Array<Uri>>? = null
+    private lateinit var gv: GeckoView
+    private lateinit var session: GeckoSession
+    private var port: WebExtension.Port? = null
+    private var pendingScan: String? = null
+    private var permCb: GeckoSession.PermissionDelegate.Callback? = null
     private val prefs by lazy { getSharedPreferences("jt", MODE_PRIVATE) }
     private val url get() = prefs.getString("url", getString(R.string.default_url))!!
     private val pin get() = prefs.getString("pin", getString(R.string.default_pin))!!
@@ -41,65 +46,80 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         setContentView(R.layout.activity_main)
-        web = findViewById(R.id.web)
-        setupWeb()
-        findViewById<View>(R.id.retry).setOnClickListener { findViewById<View>(R.id.offline).visibility = View.GONE; web.loadUrl(url) }
+        gv = findViewById(R.id.web)
+        setupGecko()
+        findViewById<View>(R.id.retry).setOnClickListener { findViewById<View>(R.id.offline).visibility = View.GONE; session.loadUri(url) }
         findViewById<View>(R.id.offlineSettings).setOnClickListener { askPin { showSettings() } }
-        val handle = findViewById<View>(R.id.handle)
-        handle.setOnLongClickListener { askPin { showSettings() }; true }
-        val gd = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+        findViewById<View>(R.id.handle).setOnLongClickListener { askPin { showSettings() }; true }
+        if (android.os.Build.VERSION.SDK_INT >= 23 && checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED)
+            requestPermissions(arrayOf(Manifest.permission.CAMERA), 1)
+        setupDataWedge()
+        session.loadUri(url)
+    }
+
+    private val gd by lazy {
+        GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
             override fun onFling(e1: MotionEvent?, e2: MotionEvent, vx: Float, vy: Float): Boolean {
                 val h = resources.displayMetrics.heightPixels
                 if (e1 != null && e1.y > h * 0.9f && vy < -1200 && e1.y - e2.y > 120) { openDrawer(); return true }
                 return false
             }
         })
-        findViewById<View>(R.id.root).setOnTouchListener { _, ev -> gd.onTouchEvent(ev); false }
-        web.setOnTouchListener { _, ev -> gd.onTouchEvent(ev); false }
-        if (android.os.Build.VERSION.SDK_INT >= 23 && checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED)
-            requestPermissions(arrayOf(Manifest.permission.CAMERA), 1)
-        setupDataWedge()
-        web.loadUrl(url)
     }
 
-    private fun setupWeb() {
-        val s = web.settings
-        s.javaScriptEnabled = true
-        s.domStorageEnabled = true
-        s.databaseEnabled = true
-        s.mediaPlaybackRequiresUserGesture = false
-        s.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW   // https oldal → http LAN szerver
-        s.allowFileAccess = true
-        s.loadWithOverviewMode = true
-        s.useWideViewPort = true
-        s.setSupportZoom(false)
-        s.cacheMode = WebSettings.LOAD_DEFAULT
-        s.userAgentString = s.userAgentString + " JegyTerminalLauncher/1.0"
-        web.setBackgroundColor(0xFF4A148C.toInt())
-        web.webChromeClient = object : WebChromeClient() {
-            override fun onPermissionRequest(request: PermissionRequest) { runOnUiThread { request.grant(request.resources) } }
-            override fun onShowFileChooser(w: WebView?, cb: ValueCallback<Array<Uri>>, p: FileChooserParams): Boolean {
-                fileCb?.onReceiveValue(null); fileCb = cb
-                val i = Intent(Intent.ACTION_GET_CONTENT).addCategory(Intent.CATEGORY_OPENABLE).setType("image/*")
-                try { startActivityForResult(Intent.createChooser(i, "Kép"), 7) } catch (e: Exception) { fileCb = null; return false }
-                return true
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean { gd.onTouchEvent(ev); return super.dispatchTouchEvent(ev) }
+
+    private fun setupGecko() {
+        val rt = runtime(this)
+        session = GeckoSession(GeckoSessionSettings.Builder().usePrivateMode(false).build())
+        session.permissionDelegate = object : GeckoSession.PermissionDelegate {
+            override fun onAndroidPermissionsRequest(s: GeckoSession, permissions: Array<out String>?, callback: GeckoSession.PermissionDelegate.Callback) {
+                if (android.os.Build.VERSION.SDK_INT < 23 || permissions == null || permissions.all { checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED }) { callback.grant(); return }
+                permCb = callback; requestPermissions(permissions, 2)
+            }
+            override fun onContentPermissionRequest(s: GeckoSession, perm: GeckoSession.PermissionDelegate.ContentPermission): GeckoResult<Int> =
+                GeckoResult.fromValue(GeckoSession.PermissionDelegate.ContentPermission.VALUE_ALLOW)
+            override fun onMediaPermissionRequest(s: GeckoSession, uri: String, video: Array<out GeckoSession.PermissionDelegate.MediaSource>?, audio: Array<out GeckoSession.PermissionDelegate.MediaSource>?, callback: GeckoSession.PermissionDelegate.MediaCallback) {
+                val cam = video?.firstOrNull { it.source == GeckoSession.PermissionDelegate.MediaSource.SOURCE_CAMERA && (it.name ?: "").lowercase().let { n -> n.contains("back") || n.contains("rear") || n.contains("environment") } }
+                    ?: video?.firstOrNull { it.source == GeckoSession.PermissionDelegate.MediaSource.SOURCE_CAMERA } ?: video?.firstOrNull()
+                if (cam != null) callback.grant(cam, null) else callback.reject()
             }
         }
-        web.webViewClient = object : WebViewClient() {
-            override fun shouldOverrideUrlLoading(v: WebView, r: WebResourceRequest): Boolean {
-                val u = r.url.toString()
-                if (u.startsWith("http")) return false
-                try { startActivity(Intent(Intent.ACTION_VIEW, r.url)) } catch (e: Exception) {}
-                return true
+        session.navigationDelegate = object : GeckoSession.NavigationDelegate {
+            override fun onLoadRequest(s: GeckoSession, r: GeckoSession.NavigationDelegate.LoadRequest): GeckoResult<AllowOrDeny> {
+                if (r.uri.startsWith("http")) return GeckoResult.fromValue(AllowOrDeny.ALLOW)
+                try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(r.uri))) } catch (e: Exception) {}
+                return GeckoResult.fromValue(AllowOrDeny.DENY)
             }
-            override fun onReceivedError(v: WebView, r: WebResourceRequest, e: WebResourceError) {
-                if (r.isForMainFrame) {
-                    findViewById<View>(R.id.offline).visibility = View.VISIBLE
-                    findViewById<android.widget.TextView>(R.id.offlineMsg).text = "A terminál oldala nem tölthető be (${e.description}).\nEllenőrizd a Wi-Fi / mobilnet kapcsolatot, vagy a címet a beállításokban."
+            override fun onNewSession(s: GeckoSession, uri: String): GeckoResult<GeckoSession> { s.loadUri(uri); val r = GeckoResult<GeckoSession>(); r.complete(null); return r }
+        }
+        session.progressDelegate = object : GeckoSession.ProgressDelegate {
+            override fun onPageStop(s: GeckoSession, success: Boolean) {
+                findViewById<View>(R.id.offline).visibility = if (success) View.GONE else View.VISIBLE
+                if (!success) findViewById<android.widget.TextView>(R.id.offlineMsg).text = "A terminál oldala nem tölthető be.\nEllenőrizd a Wi-Fi / mobilnet kapcsolatot, vagy a címet a beállításokban."
+            }
+        }
+        session.contentDelegate = object : GeckoSession.ContentDelegate {
+            override fun onCrash(s: GeckoSession) { s.close(); setupGecko(); session.loadUri(url) }
+            override fun onKill(s: GeckoSession) { s.close(); setupGecko(); session.loadUri(url) }
+        }
+        session.open(rt)
+        gv.setSession(session)
+        // beépített kiegészítő: ezen át jut el a szkennelt kód a web-appnak
+        rt.webExtensionController.ensureBuiltIn("resource://android/assets/jtext/", "jt@jegyterminal").accept({ ext ->
+            if (ext != null) session.webExtensionController.setMessageDelegate(ext, object : WebExtension.MessageDelegate {
+                override fun onConnect(p: WebExtension.Port) {
+                    port = p
+                    p.setDelegate(object : WebExtension.PortDelegate { override fun onDisconnect(pp: WebExtension.Port) { if (port == pp) port = null } })
+                    pendingScan?.let { inject(it) }; pendingScan = null
                 }
-            }
-            override fun onPageFinished(v: WebView, u: String) { findViewById<View>(R.id.offline).visibility = View.GONE }
-        }
+            }, "jt")
+        }, { })
+    }
+
+    override fun onRequestPermissionsResult(req: Int, permissions: Array<out String>, results: IntArray) {
+        super.onRequestPermissionsResult(req, permissions, results)
+        if (req == 2) { val cb = permCb; permCb = null; if (results.all { it == PackageManager.PERMISSION_GRANTED }) cb?.grant() else cb?.reject() }
     }
 
     /** Zebra DataWedge profil: a szkenner Intenttel küldi a kódot ennek az appnak (billentyűzet-mód kikapcsolva). */
@@ -131,8 +151,9 @@ class MainActivity : Activity() {
     }
 
     private fun inject(code: String) {
-        val js = "(function(c){ if(window.jegyScan){ window.jegyScan(c); } else { var i=document.getElementById('codeInput'); if(i){ i.value=c; i.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true})); } } })(" + JSONObject.quote(code) + ")"
-        runOnUiThread { web.evaluateJavascript(js, null) }
+        val p = port
+        if (p == null) { pendingScan = code; return }
+        runOnUiThread { try { p.postMessage(JSONObject().put("code", code)) } catch (e: Exception) { pendingScan = code } }
     }
 
     private fun openDrawer() { startActivity(Intent(this, DrawerActivity::class.java)); overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out) }
@@ -156,9 +177,9 @@ class MainActivity : Activity() {
             .setPositiveButton("Mentés") { _, _ ->
                 prefs.edit().putString("url", eu.text.toString().trim()).apply()
                 if (ep.text.isNotBlank()) prefs.edit().putString("pin", ep.text.toString().trim()).apply()
-                web.loadUrl(url)
+                session.loadUri(url)
             }
-            .setNeutralButton("Újratöltés") { _, _ -> web.clearCache(true); web.loadUrl(url) }
+            .setNeutralButton("Újratöltés") { _, _ -> session.reload(GeckoSession.LOAD_FLAGS_BYPASS_CACHE) }
             .setNegativeButton(if (owner) "Kioszk feloldása" else "Mégse") { _, _ -> if (owner) try { stopLockTask() } catch (e: Exception) {} }
             .show()
     }
@@ -183,17 +204,15 @@ class MainActivity : Activity() {
 
     override fun onNewIntent(intent: Intent?) { super.onNewIntent(intent); intent?.getStringExtra("com.symbol.datawedge.data_string")?.let { inject(it) } }
 
-    override fun onActivityResult(req: Int, res: Int, data: Intent?) {
-        super.onActivityResult(req, res, data)
-        if (req == 7) { val u = if (res == RESULT_OK) data?.data else null; fileCb?.onReceiveValue(if (u != null) arrayOf(u) else null); fileCb = null }
-    }
-
     override fun onBackPressed() { /* a terminálból nincs kilépés a Vissza gombbal */ }
 
-    override fun dispatchKeyEvent(e: KeyEvent): Boolean {
-        // Zebra: oldalsó szkenner-gombok és Enter a web-apphoz mennek; Home-ot a rendszer kezeli (mi vagyunk a Home)
-        return super.dispatchKeyEvent(e)
+    companion object {
+        const val SCAN_ACTION = "hu.jegyterminal.SCAN"
+        private var rt: GeckoRuntime? = null
+        fun runtime(ctx: Context): GeckoRuntime {
+            rt?.let { return it }
+            val s = GeckoRuntimeSettings.Builder().javaScriptEnabled(true).remoteDebuggingEnabled(false).consoleOutput(false).build()
+            return GeckoRuntime.create(ctx.applicationContext, s).also { rt = it }
+        }
     }
-
-    companion object { const val SCAN_ACTION = "hu.jegyterminal.SCAN" }
 }
