@@ -10,8 +10,8 @@ android {
         minSdk = 21
         targetSdk = 34
         ndk { abiFilters += listOf("armeabi-v7a", "arm64-v8a") }
-        versionCode = 8
-        versionName = "2.4"
+        versionCode = 9
+        versionName = "2.5"
     }
     buildTypes {
         release {

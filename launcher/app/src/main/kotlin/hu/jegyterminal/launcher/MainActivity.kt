@@ -20,7 +20,7 @@ import org.mozilla.geckoview.*
  * Jegyterminál launcher: kezdőképernyőként a jegyellenőr web-app fut teljes képernyőn.
  * A web-appot NEM a rendszer (sokszor elavult) WebView-ja, hanem a beépített GeckoView (Firefox-motor) futtatja,
  * így Android 5–7-es, Play Áruház nélküli készülékeken (pl. Zebra TC56) is megy.
- *  - felhúzás a képernyő aljáról: alkalmazás-fiók (minden telepített app)
+ *  - alkalmazás-fiók (minden telepített app): csak a beállításokból
  *  - alul középen hosszan: beállítások (URL, PIN, kioszk)
  *  - Zebra DataWedge: a szkenner Intenttel küldi a kódot → a beépített kiegészítőn át a web-appnak (window.jegyScan)
  *  - ha az app "device owner" (adb dpm set-device-owner), Lock Task kioszk módban fut
@@ -68,7 +68,7 @@ class MainActivity : Activity() {
         })
     }
 
-    override fun dispatchTouchEvent(ev: MotionEvent): Boolean { gd.onTouchEvent(ev); return super.dispatchTouchEvent(ev) }
+    /* nincs felhúzó gesztus – az alkalmazás-lista csak a beállításokból nyitható (a Zebrán a gesztus zavarta a terminált) */
 
     private fun setupGecko() {
         val rt = runtime(this)
@@ -219,6 +219,7 @@ class MainActivity : Activity() {
             learnKey = save; d.show()
         })
         lay.addView(btn("Gomb-tanítás törlése") { prefs.edit().remove("scanKeys").apply(); Toast.makeText(this, "Alap gombok", Toast.LENGTH_SHORT).show() })
+        lay.addView(btn("Alkalmazások megnyitása (Google, Chrome…)") { openDrawer() })
         lay.addView(btn("DataWedge app megnyitása") { try { startActivity(packageManager.getLaunchIntentForPackage("com.symbol.datawedge")) } catch (e: Exception) { Toast.makeText(this, "Nincs DataWedge ezen a készüléken", Toast.LENGTH_SHORT).show() } })
         val sv = android.widget.ScrollView(this); sv.addView(lay)
         AlertDialog.Builder(this).setTitle("Jegyterminál launcher").setView(sv)
