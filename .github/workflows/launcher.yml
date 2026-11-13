@@ -36,9 +36,11 @@ jobs:
           git worktree add /tmp/pages origin/gh-pages
           mkdir -p /tmp/pages/apk
           cp jegyterminal-launcher-zebra.apk /tmp/pages/apk/jegyterminal-launcher-zebra.apk
+          V=$(grep -o 'versionName = "[^"]*"' launcher/app/build.gradle.kts | cut -d'"' -f2)
+          echo "{\"ver\":\"$V\",\"zebra\":\"jegyterminal-launcher-zebra.apk\",\"universal\":\"https://github.com/bkvbuszozo0108-alt/jegy-terminal/releases/download/launcher/jegyterminal-launcher.apk\"}" > /tmp/pages/apk/version.json
           cd /tmp/pages
           git config user.name "github-actions"; git config user.email "actions@github.com"
-          git add apk/jegyterminal-launcher-zebra.apk
+          git add apk/jegyterminal-launcher-zebra.apk apk/version.json
           git commit -m "Zebra APK frissítés" || true
           git push origin HEAD:gh-pages
       - uses: actions/upload-artifact@v4

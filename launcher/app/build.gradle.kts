@@ -9,10 +9,11 @@ android {
         applicationId = "hu.jegyterminal.launcher"
         minSdk = 21
         targetSdk = 34
-        versionCode = 11
-        versionName = "2.7"
+        versionCode = 12
+        versionName = "2.8"
     }
     splits { abi { isEnable = true; reset(); include("armeabi-v7a", "arm64-v8a"); isUniversalApk = true } }
+    buildFeatures { buildConfig = true }
     buildTypes {
         release {
             isMinifyEnabled = false

@@ -72,7 +72,7 @@ class MainActivity : Activity() {
 
     private fun setupGecko() {
         val rt = runtime(this)
-        val ua = "Mozilla/5.0 (Android " + android.os.Build.VERSION.RELEASE + "; Mobile; rv:144.0) Gecko/144.0 Firefox/144.0 JegyTerminalLauncher/2.2" + (if (hwMode()) " Zebra" else "")
+        val ua = "Mozilla/5.0 (Android " + android.os.Build.VERSION.RELEASE + "; Mobile; rv:144.0) Gecko/144.0 Firefox/144.0 JegyTerminalLauncher/" + BuildConfig.VERSION_NAME + (if (hwMode()) " Zebra" else "")
         session = GeckoSession(GeckoSessionSettings.Builder().usePrivateMode(false).userAgentOverride(ua).build())
         session.permissionDelegate = object : GeckoSession.PermissionDelegate {
             override fun onAndroidPermissionsRequest(s: GeckoSession, permissions: Array<out String>?, callback: GeckoSession.PermissionDelegate.Callback) {
@@ -102,6 +102,18 @@ class MainActivity : Activity() {
             }
         }
         session.contentDelegate = object : GeckoSession.ContentDelegate {
+            override fun onExternalResponse(s: GeckoSession, response: WebResponse) {
+                val uri = response.uri
+                if (!uri.endsWith(".apk")) return
+                Toast.makeText(this@MainActivity, "Frissítés letöltése… (kb. 1 perc)", Toast.LENGTH_LONG).show()
+                Thread {
+                    try {
+                        val f = java.io.File(getExternalFilesDir(null), "update.apk"); if (f.exists()) f.delete()
+                        response.body?.use { inp -> java.io.FileOutputStream(f).use { out -> inp.copyTo(out, 1 shl 16) } }
+                        runOnUiThread { installApk(f) }
+                    } catch (e: Exception) { runOnUiThread { Toast.makeText(this@MainActivity, "Letöltési hiba: " + e.message, Toast.LENGTH_LONG).show() } }
+                }.start()
+            }
             override fun onCrash(s: GeckoSession) { s.close(); setupGecko(); session.loadUri(url) }
             override fun onKill(s: GeckoSession) { s.close(); setupGecko(); session.loadUri(url) }
         }
@@ -114,7 +126,7 @@ class MainActivity : Activity() {
                     port = p
                     p.setDelegate(object : WebExtension.PortDelegate {
                         override fun onDisconnect(pp: WebExtension.Port) { if (port == pp) port = null }
-                        override fun onPortMessage(m: Any, pp: WebExtension.Port) { if (m is JSONObject && m.optBoolean("trigger")) softScan(true) }
+                        override fun onPortMessage(m: Any, pp: WebExtension.Port) { if (m is JSONObject) { if (m.optBoolean("trigger")) softScan(true); if (m.optBoolean("update")) runOnUiThread { startUpdate() } } }
                     })
                     try { p.postMessage(JSONObject().put("hw", hwMode()).put("dev", android.os.Build.MANUFACTURER + " " + android.os.Build.MODEL)) } catch (e: Exception) {}
                     pendingScan?.let { inject(it) }; pendingScan = null
@@ -197,29 +209,25 @@ class MainActivity : Activity() {
             if (i?.getLongExtra(android.app.DownloadManager.EXTRA_DOWNLOAD_ID, -1) != dlId) return
             try { unregisterReceiver(this) } catch (e: Exception) {}
             val f = java.io.File(getExternalFilesDir(null), "update.apk")
-            if (!f.exists() || f.length() < 1_000_000) { Toast.makeText(this@MainActivity, "A letöltés nem sikerült", Toast.LENGTH_LONG).show(); return }
-            try {
-                val it = Intent(Intent.ACTION_VIEW)
-                if (android.os.Build.VERSION.SDK_INT >= 24) {
-                    val u = androidx.core.content.FileProvider.getUriForFile(this@MainActivity, "hu.jegyterminal.launcher.files", f)
-                    it.setDataAndType(u, "application/vnd.android.package-archive"); it.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                } else it.setDataAndType(Uri.fromFile(f), "application/vnd.android.package-archive")
-                it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                try { stopLockTask() } catch (e: Exception) {}
-                startActivity(it)
-            } catch (e: Exception) { Toast.makeText(this@MainActivity, "Telepítő nem nyitható: " + e.message, Toast.LENGTH_LONG).show() }
+            installApk(f)
         }
     }
-    private fun startUpdate() {
+    private fun installApk(f: java.io.File) {
+        if (!f.exists() || f.length() < 1_000_000) { Toast.makeText(this, "A letöltés nem sikerült", Toast.LENGTH_LONG).show(); return }
         try {
-            val f = java.io.File(getExternalFilesDir(null), "update.apk"); if (f.exists()) f.delete()
-            val dm = getSystemService(DOWNLOAD_SERVICE) as android.app.DownloadManager
-            val req = android.app.DownloadManager.Request(Uri.parse(if (android.os.Build.SUPPORTED_ABIS.firstOrNull() == "armeabi-v7a") APK_URL_ZEBRA else APK_URL)).setTitle("Jegyterminál launcher").setDescription("Frissítés letöltése…")
-                .setDestinationInExternalFilesDir(this, null, "update.apk").setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE)
-            if (android.os.Build.VERSION.SDK_INT >= 33) registerReceiver(dlRx, IntentFilter(android.app.DownloadManager.ACTION_DOWNLOAD_COMPLETE), RECEIVER_EXPORTED) else registerReceiver(dlRx, IntentFilter(android.app.DownloadManager.ACTION_DOWNLOAD_COMPLETE))
-            dlId = dm.enqueue(req)
-            Toast.makeText(this, "Letöltés indult (~150 MB) – a végén megnyílik a telepítő", Toast.LENGTH_LONG).show()
-        } catch (e: Exception) { Toast.makeText(this, "Nem indult a letöltés: " + e.message, Toast.LENGTH_LONG).show() }
+            val it = Intent(Intent.ACTION_VIEW)
+            if (android.os.Build.VERSION.SDK_INT >= 24) {
+                val u = androidx.core.content.FileProvider.getUriForFile(this, "hu.jegyterminal.launcher.files", f)
+                it.setDataAndType(u, "application/vnd.android.package-archive"); it.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            } else it.setDataAndType(Uri.fromFile(f), "application/vnd.android.package-archive")
+            it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            try { stopLockTask() } catch (e: Exception) {}
+            startActivity(it)
+        } catch (e: Exception) { Toast.makeText(this, "Telepítő nem nyitható: " + e.message, Toast.LENGTH_LONG).show() }
+    }
+    private fun startUpdate() {
+        val url = if (android.os.Build.SUPPORTED_ABIS.firstOrNull() == "armeabi-v7a") APK_URL_ZEBRA else APK_URL
+        session.loadUri(url + "?t=" + System.currentTimeMillis())   // a beépített motor tölti le → onExternalResponse → telepítő
     }
 
     private fun openDrawer() { startActivity(Intent(this, DrawerActivity::class.java)); overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out) }
