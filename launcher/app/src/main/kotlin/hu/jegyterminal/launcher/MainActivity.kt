@@ -190,6 +190,38 @@ class MainActivity : Activity() {
         runOnUiThread { try { p.postMessage(JSONObject().put("code", code)) } catch (e: Exception) { pendingScan = code } }
     }
 
+    /** Az új APK letöltése a GitHub kiadásból és a telepítő megnyitása – kábel nélkül. */
+    private var dlId = -1L
+    private val dlRx = object : BroadcastReceiver() {
+        override fun onReceive(c: Context?, i: Intent?) {
+            if (i?.getLongExtra(android.app.DownloadManager.EXTRA_DOWNLOAD_ID, -1) != dlId) return
+            try { unregisterReceiver(this) } catch (e: Exception) {}
+            val f = java.io.File(getExternalFilesDir(null), "update.apk")
+            if (!f.exists() || f.length() < 1_000_000) { Toast.makeText(this@MainActivity, "A letöltés nem sikerült", Toast.LENGTH_LONG).show(); return }
+            try {
+                val it = Intent(Intent.ACTION_VIEW)
+                if (android.os.Build.VERSION.SDK_INT >= 24) {
+                    val u = androidx.core.content.FileProvider.getUriForFile(this@MainActivity, "hu.jegyterminal.launcher.files", f)
+                    it.setDataAndType(u, "application/vnd.android.package-archive"); it.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                } else it.setDataAndType(Uri.fromFile(f), "application/vnd.android.package-archive")
+                it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                try { stopLockTask() } catch (e: Exception) {}
+                startActivity(it)
+            } catch (e: Exception) { Toast.makeText(this@MainActivity, "Telepítő nem nyitható: " + e.message, Toast.LENGTH_LONG).show() }
+        }
+    }
+    private fun startUpdate() {
+        try {
+            val f = java.io.File(getExternalFilesDir(null), "update.apk"); if (f.exists()) f.delete()
+            val dm = getSystemService(DOWNLOAD_SERVICE) as android.app.DownloadManager
+            val req = android.app.DownloadManager.Request(Uri.parse(APK_URL)).setTitle("Jegyterminál launcher").setDescription("Frissítés letöltése…")
+                .setDestinationInExternalFilesDir(this, null, "update.apk").setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE)
+            if (android.os.Build.VERSION.SDK_INT >= 33) registerReceiver(dlRx, IntentFilter(android.app.DownloadManager.ACTION_DOWNLOAD_COMPLETE), RECEIVER_EXPORTED) else registerReceiver(dlRx, IntentFilter(android.app.DownloadManager.ACTION_DOWNLOAD_COMPLETE))
+            dlId = dm.enqueue(req)
+            Toast.makeText(this, "Letöltés indult (~150 MB) – a végén megnyílik a telepítő", Toast.LENGTH_LONG).show()
+        } catch (e: Exception) { Toast.makeText(this, "Nem indult a letöltés: " + e.message, Toast.LENGTH_LONG).show() }
+    }
+
     private fun openDrawer() { startActivity(Intent(this, DrawerActivity::class.java)); overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out) }
 
     private fun askPin(ok: () -> Unit) {
@@ -219,6 +251,7 @@ class MainActivity : Activity() {
             learnKey = save; d.show()
         })
         lay.addView(btn("Gomb-tanítás törlése") { prefs.edit().remove("scanKeys").apply(); Toast.makeText(this, "Alap gombok", Toast.LENGTH_SHORT).show() })
+        lay.addView(btn("Launcher frissítése (letöltés + telepítés)") { startUpdate() })
         lay.addView(btn("Alkalmazások megnyitása (Google, Chrome…)") { openDrawer() })
         lay.addView(btn("DataWedge app megnyitása") { try { startActivity(packageManager.getLaunchIntentForPackage("com.symbol.datawedge")) } catch (e: Exception) { Toast.makeText(this, "Nincs DataWedge ezen a készüléken", Toast.LENGTH_SHORT).show() } })
         val sv = android.widget.ScrollView(this); sv.addView(lay)
@@ -264,6 +297,7 @@ class MainActivity : Activity() {
 
     companion object {
         const val SCAN_ACTION = "hu.jegyterminal.SCAN"
+        const val APK_URL = "https://github.com/bkvbuszozo0108-alt/jegy-terminal/releases/download/launcher/jegyterminal-launcher.apk"
         private var rt: GeckoRuntime? = null
         fun runtime(ctx: Context): GeckoRuntime {
             rt?.let { return it }

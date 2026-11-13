@@ -10,8 +10,8 @@ android {
         minSdk = 21
         targetSdk = 34
         ndk { abiFilters += listOf("armeabi-v7a", "arm64-v8a") }
-        versionCode = 9
-        versionName = "2.5"
+        versionCode = 10
+        versionName = "2.6"
     }
     buildTypes {
         release {
@@ -24,4 +24,4 @@ android {
 }
 configurations.all { resolutionStrategy { force("androidx.core:core:1.13.1", "androidx.core:core-ktx:1.13.1", "androidx.annotation:annotation:1.8.2", "androidx.lifecycle:lifecycle-runtime:2.8.7", "androidx.lifecycle:lifecycle-common:2.8.7") } }
 kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) } }
-dependencies { implementation("org.mozilla.geckoview:geckoview:144.0.20251027123126") }
+dependencies { implementation("org.mozilla.geckoview:geckoview:144.0.20251027123126"); implementation("androidx.core:core:1.13.1") }
