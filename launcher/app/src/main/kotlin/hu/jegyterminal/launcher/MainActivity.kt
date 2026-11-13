@@ -214,7 +214,7 @@ class MainActivity : Activity() {
         try {
             val f = java.io.File(getExternalFilesDir(null), "update.apk"); if (f.exists()) f.delete()
             val dm = getSystemService(DOWNLOAD_SERVICE) as android.app.DownloadManager
-            val req = android.app.DownloadManager.Request(Uri.parse(APK_URL)).setTitle("Jegyterminál launcher").setDescription("Frissítés letöltése…")
+            val req = android.app.DownloadManager.Request(Uri.parse(if (android.os.Build.SUPPORTED_ABIS.firstOrNull() == "armeabi-v7a") APK_URL_ZEBRA else APK_URL)).setTitle("Jegyterminál launcher").setDescription("Frissítés letöltése…")
                 .setDestinationInExternalFilesDir(this, null, "update.apk").setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE)
             if (android.os.Build.VERSION.SDK_INT >= 33) registerReceiver(dlRx, IntentFilter(android.app.DownloadManager.ACTION_DOWNLOAD_COMPLETE), RECEIVER_EXPORTED) else registerReceiver(dlRx, IntentFilter(android.app.DownloadManager.ACTION_DOWNLOAD_COMPLETE))
             dlId = dm.enqueue(req)
@@ -297,6 +297,7 @@ class MainActivity : Activity() {
 
     companion object {
         const val SCAN_ACTION = "hu.jegyterminal.SCAN"
+        const val APK_URL_ZEBRA = "https://bkvbuszozo0108-alt.github.io/jegy-terminal/apk/jegyterminal-launcher-zebra.apk"
         const val APK_URL = "https://github.com/bkvbuszozo0108-alt/jegy-terminal/releases/download/launcher/jegyterminal-launcher.apk"
         private var rt: GeckoRuntime? = null
         fun runtime(ctx: Context): GeckoRuntime {

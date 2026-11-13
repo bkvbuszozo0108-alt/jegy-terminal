@@ -9,10 +9,10 @@ android {
         applicationId = "hu.jegyterminal.launcher"
         minSdk = 21
         targetSdk = 34
-        ndk { abiFilters += listOf("armeabi-v7a", "arm64-v8a") }
-        versionCode = 10
-        versionName = "2.6"
+        versionCode = 11
+        versionName = "2.7"
     }
+    splits { abi { isEnable = true; reset(); include("armeabi-v7a", "arm64-v8a"); isUniversalApk = true } }
     buildTypes {
         release {
             isMinifyEnabled = false

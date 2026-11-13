@@ -25,7 +25,22 @@ jobs:
       - name: Build APK
         run: gradle -p launcher assembleRelease --no-daemon
       - name: Rename
-        run: cp launcher/app/build/outputs/apk/release/app-release.apk jegyterminal-launcher.apk
+        run: |
+          ls launcher/app/build/outputs/apk/release/
+          cp launcher/app/build/outputs/apk/release/app-universal-release.apk jegyterminal-launcher.apk
+          cp launcher/app/build/outputs/apk/release/app-armeabi-v7a-release.apk jegyterminal-launcher-zebra.apk
+          cp launcher/app/build/outputs/apk/release/app-arm64-v8a-release.apk jegyterminal-launcher-arm64.apk
+      - name: Publish Zebra APK on GitHub Pages (gh-pages/apk/)
+        run: |
+          git fetch origin gh-pages
+          git worktree add /tmp/pages origin/gh-pages
+          mkdir -p /tmp/pages/apk
+          cp jegyterminal-launcher-zebra.apk /tmp/pages/apk/jegyterminal-launcher-zebra.apk
+          cd /tmp/pages
+          git config user.name "github-actions"; git config user.email "actions@github.com"
+          git add apk/jegyterminal-launcher-zebra.apk
+          git commit -m "Zebra APK frissítés" || true
+          git push origin HEAD:gh-pages
       - uses: actions/upload-artifact@v4
         with: { name: jegyterminal-launcher, path: jegyterminal-launcher.apk }
       - name: Publish release (tag "launcher")
@@ -34,4 +49,7 @@ jobs:
           tag_name: launcher
           name: Jegyterminál launcher APK
           body: "Android launcher app a jegyterminálhoz. Telepítés: töltsd le az APK-t a telefonra, engedélyezd az ismeretlen forrást, telepítsd, majd Home gomb → válaszd a Jegyterminált → Mindig."
-          files: jegyterminal-launcher.apk
+          files: |
+            jegyterminal-launcher.apk
+            jegyterminal-launcher-zebra.apk
+            jegyterminal-launcher-arm64.apk
