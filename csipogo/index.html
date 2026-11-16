@@ -83,6 +83,7 @@ dd{margin:0;text-align:right;font-weight:500;overflow-wrap:anywhere}
 label.file{display:inline-flex;align-items:center;justify-content:center;height:52px;padding:0 16px;border-radius:10px;background:var(--tag);color:var(--tag-ink);font-weight:600;margin-top:8px;cursor:pointer}
 label.file input{position:absolute;opacity:0;width:1px;height:1px}
 details{margin-top:12px;font-size:14.5px}summary{cursor:pointer;color:var(--mute);padding:6px 0}details ol{margin-top:8px}
+.own{display:flex;flex-direction:column;gap:8px}.own input{height:48px;border-radius:10px;border:2px solid var(--line);background:var(--body);color:var(--ink);font:500 17px var(--text);padding:0 12px}.own input:focus{outline:none;border-color:var(--tag)}
 .note{font-size:13.5px;color:var(--mute);margin:10px 0 0}
 .msg{font-size:14px;color:var(--tag);min-height:1.2em;margin:8px 0 0}
 .msg.err{color:var(--bad)}
@@ -194,9 +195,42 @@ function lookup(text){
     if(list.length===1){show(list[0]);return}
     if(list.length){choices(text,list);return}
   }
-  if(/^\d{8,14}$/.test(text)){world(text);return}
+  if(OWN[k]){showOwn(k);return}
+  if(/^\d{6,14}$/.test(text)){world(text);return}
   miss(text,"Erre nincs találat.");
 }
+
+/* ---------- own products: what no database knows can be added once and is remembered on this device ---------- */
+var OWN={};
+try{OWN=JSON.parse(localStorage.getItem("csipogo-own")||"{}")||{}}catch(e){OWN={}}
+function saveOwn(){try{localStorage.setItem("csipogo-own",JSON.stringify(OWN));return true}catch(e){return false}}
+function ownForm(code,name,title){
+  return'<div class="panel own" style="margin-top:12px"><h2>'+title+'</h2>'+
+    '<input id="ownName" type="text" placeholder="Termék neve" value="'+esc(name||"")+'" autocomplete="off">'+
+    '<input id="ownPrice" type="text" inputmode="numeric" placeholder="Ára (Ft)" autocomplete="off">'+
+    '<button class="btn primary" type="button" data-save="'+esc(code)+'">Mentés ehhez a vonalkódhoz</button></div>';
+}
+function showOwn(k){
+  var o=OWN[k];beep(true);
+  var h='<div class="tag flash"><div class="cat">Saját adat</div><div class="name">'+esc(o.n)+'</div>';
+  if(o.p!=null)h+='<div class="price">'+ft(o.p)+'<small>Ft</small></div>';
+  h+='<div class="sub">Ezt te mentetted el ezen a készüléken'+(o.d?" ("+esc(o.d)+")":"")+'.</div>';
+  h+='<div class="code"><span>'+esc(k)+'</span></div></div>';
+  h+=similarHtml(similar(o.n,"","",null),"Hasonló termékek ára (Árfigyelő)")+webLink(o.n);
+  h+=ownForm(k,o.n,"Módosítás");
+  h+='<p style="margin:12px 0 0"><button class="btn" type="button" data-del="'+esc(k)+'">Saját adat törlése</button></p>';
+  result.innerHTML=h;addHist({key:k,name:o.n,lo:o.p});window.scrollTo(0,0);
+}
+document.addEventListener("click",function(e){
+  var b=e.target.closest&&e.target.closest("button[data-save],button[data-del]");
+  if(!b)return;
+  if(b.hasAttribute("data-del")){delete OWN[codeKey(b.getAttribute("data-del"))];saveOwn();result.innerHTML="";return}
+  var k=codeKey(b.getAttribute("data-save")), n=$("ownName").value.trim(), pr=parseFloat($("ownPrice").value.replace(/\s/g,"").replace(",","."));
+  if(!n){$("ownName").focus();return}
+  OWN[k]={n:n,p:isFinite(pr)?pr:null,d:new Date().toLocaleDateString("hu-HU")};
+  if(!saveOwn()){b.textContent="Ezen a készüléken nem menthető";return}
+  showOwn(k);
+});
 
 /* ---------- price by name: find the same or similar products in the Árfigyelő list ---------- */
 var STOP={a:1,az:1,es:1,is:1,db:1,kg:1,g:1,l:1,ml:1,dl:1,cl:1,x:1,with:1,and:1,de:1,the:1,of:1};
@@ -247,7 +281,15 @@ function world(code){
   var i=0, failed=false;
   (function next(){
     if(my!==wseq)return;
-    if(i>=WORLD.length){
+    if(i===WORLD.length){i++;
+      fetch("https://api.upcitemdb.com/prod/trial/lookup?upc="+encodeURIComponent(code)).then(function(r){return r.json()}).then(function(d){
+        if(my!==wseq)return;
+        var it=d&&d.items&&d.items[0];
+        if(it&&(it.title||it.brand)){var p={product_name:it.title,brands:it.brand,categories:it.category,quantity:it.size,src:"UPCitemdb"};wcache[code]=p;showWorld(code,p)}
+        else next();
+      }).catch(function(){next()});
+      return}
+    if(i>WORLD.length){
       if(!failed)wcache[code]=null;
       miss(code,failed?"Nem sikerült elérni a termékadatbázist. Ellenőrizd az internetet.":"Ezt a kódot egyik adatbázis sem ismeri.");return}
     var u=WORLD[i++]+"/api/v2/product/"+encodeURIComponent(code)+".json?lc=hu&fields=product_name,product_name_hu,generic_name,generic_name_hu,brands,quantity,categories,labels,countries,nutriscore_grade,ingredients_text_hu,ingredients_text";
@@ -277,9 +319,10 @@ function showWorld(code,p){
   var info=[["Márka",p.brands],["Kiszerelés",p.quantity],["Kategória",cat],["Megnevezés",p.generic_name_hu||p.generic_name],
     ["Jelölések",p.labels],["Nutri-Score",p.nutriscore_grade&&/^[a-e]$/.test(p.nutriscore_grade)?p.nutriscore_grade.toUpperCase():""],
     ["Forgalmazás",p.countries],["Összetevők",ing]].filter(function(x){return x[1]});
-  info.push(["Adat forrása","Open Food Facts"]);
+  info.push(["Adat forrása",p.src||"Open Food Facts"]);
   h+=similarHtml(sim,"Árak név alapján (Árfigyelő)");
   h+=webLink((p.brands?String(p.brands).split(",")[0]+" ":"")+name+(p.quantity?" "+p.quantity:""));
+  h+=ownForm(code,(p.brands&&String(name).toLowerCase().indexOf(String(p.brands).split(",")[0].toLowerCase())<0?String(p.brands).split(",")[0]+" ":"")+name+(p.quantity?" "+p.quantity:""),"Saját ár megadása");
   h+='<div class="panel" style="margin-top:12px"><h2>Tudnivalók</h2><dl>'+info.map(function(x){return"<dt>"+esc(x[0])+"</dt><dd>"+esc(x[1])+"</dd>"}).join("")+'</dl></div>';
   result.innerHTML=h;
   addHist({key:code,name:name,lo:top?top.lo:null});
@@ -325,7 +368,9 @@ function show(p){
 }
 function miss(code,why){
   beep(false);
-  result.innerHTML='<div class="tag miss flash"><div class="name">Nincs találat</div><div class="sub">'+esc(why)+'</div><div class="code"><span>'+esc(code)+'</span></div></div>';
+  var extra="";
+  if(/^\d{6,14}$/.test(code)&&DB.p)extra='<p style="margin:12px 0 0"><a class="btn dl" href="https://www.google.com/search?q='+encodeURIComponent(code)+'" target="_blank" rel="noopener">Vonalkód keresése a weben</a></p>'+ownForm(code,"","Felvétel saját termékként");
+  result.innerHTML='<div class="tag miss flash"><div class="name">Nincs találat</div><div class="sub">'+esc(why)+'</div><div class="code"><span>'+esc(code)+'</span></div></div>'+extra;
 }
 function rowBtn(p){return'<div class="row"><button type="button" data-code="'+esc(p.key)+'"><span class="n">'+esc(p.name)+'</span><span class="p">'+(p.lo!=null?ft(p.lo)+" Ft":"–")+'</span></button></div>'}
 function choices(text,list){
@@ -400,7 +445,7 @@ scan.addEventListener("blur",function(){setTimeout(function(){
 document.addEventListener("visibilitychange",function(){if(!document.hidden)setTimeout(focusScan,100)});
 /* The Jegyterminál launcher hands scanned codes to the page through this function. */
 window.jegyScan=function(code){scan.value="";lookup(code)};
-document.addEventListener("click",function(e){if(!(e.target.closest&&e.target.closest("a,input,#getapp,#kbd")))focusScan()});
+document.addEventListener("click",function(e){if(!(e.target.closest&&e.target.closest("a,input,#getapp,#kbd,.own")))focusScan()});
 $("kbd").addEventListener("click",function(){
   try{scan.focus()}catch(e){}
   try{if(navigator.virtualKeyboard&&navigator.virtualKeyboard.show)navigator.virtualKeyboard.show()}catch(e){}
