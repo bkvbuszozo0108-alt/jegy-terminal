@@ -269,13 +269,32 @@ function beep(ok){
 
 /* ---------- scanner input: the Zebra's scanner types the code into the focused field ---------- */
 var timer=null;
-function submit(){clearTimeout(timer);var v=scan.value;scan.value="";lookup(v)}
+function submit(){clearTimeout(timer);var v=scan.value.replace(/[\r\n\t]+/g,"").trim();scan.value="";stamps=[];if(v)lookup(v)}
 $("scanform").addEventListener("submit",function(e){e.preventDefault();submit()});
-scan.addEventListener("input",function(){
+/* Search by itself once the scanner has finished typing; no Enter or button needed.
+   Scanner mode: any code, as soon as typing pauses. Keyboard mode (ABC): only when the
+   characters arrived in a fast burst, which is a scan and not a finger. */
+var stamps=[];
+function schedule(){
   clearTimeout(timer);
-  if(manual)return;
-  if(scan.value.replace(/\D/g,"").length>=8)timer=setTimeout(submit,250);
-});
+  var v=scan.value;
+  if(!v){stamps=[];return}
+  var now=Date.now();stamps.push(now);if(stamps.length>40)stamps.shift();
+  if(v.length<3)return;
+  if(manual){
+    var burst=v.length>=6&&stamps.length>=2&&(now-stamps[0])<Math.max(400,v.length*45);
+    if(!burst)return;
+  }
+  timer=setTimeout(submit,220);
+}
+["input","keyup","change","compositionend","paste"].forEach(function(ev){scan.addEventListener(ev,function(){setTimeout(schedule,0)})});
+/* Safety net for scanners that fill the field without sending any event. */
+var lastSeen="", stable=0;
+setInterval(function(){
+  var v=scan.value;
+  if(manual||v.length<3){lastSeen=v;stable=0;return}
+  if(v===lastSeen){if(++stable>=2){stable=0;lastSeen="";submit()}}else{lastSeen=v;stable=0}
+},250);
 function focusScan(){try{if(document.activeElement!==scan)scan.focus({preventScroll:true})}catch(e){}}
 /* Scans that arrive while the field is not focused: collect the keystrokes here. */
 var kbuf="", ktimer=null;
@@ -296,7 +315,6 @@ scan.addEventListener("blur",function(){setTimeout(function(){
   var a=document.activeElement;if(!a||a===document.body||a.tagName==="BUTTON")focusScan();
 },150)});
 document.addEventListener("visibilitychange",function(){if(!document.hidden)setTimeout(focusScan,100)});
-window.addEventListener("focus",function(){setTimeout(focusScan,100)});
 /* The Jegyterminál launcher hands scanned codes to the page through this function. */
 window.jegyScan=function(code){scan.value="";lookup(code)};
 document.addEventListener("click",function(e){if(!(e.target.closest&&e.target.closest("a,input,#getapp")))focusScan()});
