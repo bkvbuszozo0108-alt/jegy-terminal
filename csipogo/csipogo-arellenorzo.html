@@ -196,7 +196,7 @@ function lookup(text){
     if(list.length){choices(text,list);return}
   }
   if(OWN[k]){showOwn(k);return}
-  if(/^\d{6,14}$/.test(text)){world(text);return}
+  if(/^\d{6,14}$/.test(text)){saved(text);return}
   miss(text,"Erre nincs találat.");
 }
 
@@ -273,9 +273,21 @@ function webLink(name){
 
 /* ---------- products outside the Árfigyelő list: open product databases (name and details, no price) ---------- */
 var WORLD=["https://world.openfoodfacts.org","https://world.openbeautyfacts.org","https://world.openproductsfacts.org","https://world.openpetfoodfacts.org"];
-var wcache={}, wseq=0;
+var wcache={}, wseq=0, shards={};
+/* First the Hungarian product set saved next to the app (small files by the last two digits of the code), then the live databases. */
+function saved(code){
+  var my=++wseq, k=codeKey(code), sh=("0"+k).slice(-2);
+  function use(d){
+    if(my!==wseq)return;
+    var e=d&&d[k];
+    if(e&&(e[0]||e[1]))showWorld(code,{product_name:e[0],brands:e[1],quantity:e[2],src:"Open Food Facts (elmentett magyar termékek)"});
+    else world(code);
+  }
+  if(shards[sh]){use(shards[sh]);return}
+  fetch(SRC.replace("arlista.json","hu/"+sh+".json")).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(d){shards[sh]=d;use(d)}).catch(function(){use(null)});
+}
 function world(code){
-  var my=++wseq;
+  var my=wseq;
   if(wcache[code]!==undefined){wcache[code]?showWorld(code,wcache[code]):miss(code,"Ezt a kódot egyik adatbázis sem ismeri.");return}
   result.innerHTML='<div class="tag miss"><div class="name" style="color:var(--ink)">Keresés…</div><div class="sub">Nincs az Árfigyelőben, keresem a nemzetközi termékadatbázisban.</div><div class="code"><span>'+esc(code)+'</span></div></div>';
   var i=0, failed=false;
