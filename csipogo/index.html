@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Csipogó árellenőrző</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#16181d">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -121,6 +125,13 @@ details{margin-top:12px;font-size:14.5px}summary{cursor:pointer;color:var(--mute
   <section class="panel hist" id="histbox" hidden>
     <h2>Utoljára csippantva</h2>
     <div class="rows" id="hist"></div>
+  </section>
+
+  <section class="panel" id="getapp">
+    <h2>App letöltése</h2>
+    <button class="btn primary" type="button" id="install">App telepítése a készülékre</button>
+    <p class="note" id="installnote">Telepítés után saját ikonnal, teljes képernyőn indul, és internet nélkül is megnyílik.</p>
+    <p class="note"><a class="link" href="csipogo-arellenorzo.html" download="csipogo-arellenorzo.html">Vagy töltsd le egyetlen fájlként</a></p>
   </section>
 
   <div class="foot">
@@ -425,7 +436,7 @@ function focusScan(){if(document.activeElement!==scan)scan.focus({preventScroll:
 document.addEventListener("keydown",function(e){
   var t=e.target;if(t!==scan&&!(t&&t.tagName==="BUTTON"&&e.key===" ")&&!e.ctrlKey&&!e.metaKey&&e.key.length===1)focusScan();
 });
-document.addEventListener("click",function(e){if(!(e.target.closest&&e.target.closest("a,label,input,summary,#pick")))focusScan()});
+document.addEventListener("click",function(e){if(!(e.target.closest&&e.target.closest("a,label,input,summary,#pick,#getapp")))focusScan()});
 $("kbd").addEventListener("click",function(){
   manual=!manual;this.classList.toggle("on",manual);this.setAttribute("aria-pressed",manual);
   scan.setAttribute("inputmode",manual?"text":"none");
@@ -453,6 +464,17 @@ function renderStatus(){
   statusEl.innerHTML=DB.demo?'<span class="dot"></span><b>Példaadat</b><br>nem valós árak':
     '<span class="dot'+(old?"":" on")+'"></span><b>'+DB.index.size.toLocaleString("hu-HU")+' termék</b><br>betöltve: '+d.toLocaleDateString("hu-HU")+(old?" (régi)":"");
 }
+/* ---------- install as app ---------- */
+var deferred=null, standalone=(window.matchMedia&&matchMedia("(display-mode: standalone)").matches)||navigator.standalone;
+if(standalone||location.protocol==="file:")$("getapp").hidden=true;
+window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();deferred=e});
+window.addEventListener("appinstalled",function(){$("getapp").hidden=true});
+$("install").addEventListener("click",function(){
+  if(deferred){deferred.prompt();deferred=null;return}
+  $("installnote").textContent="Nyisd meg a Chrome menüjét (három pont jobb fent), és válaszd: Alkalmazás telepítése vagy Hozzáadás a kezdőképernyőhöz.";
+  $("installnote").style.color="var(--tag)";
+});
+if("serviceWorker" in navigator&&location.protocol==="https:"){try{navigator.serviceWorker.register("sw.js").catch(function(){})}catch(e){}}
 restore();
 focusScan();
 })();
