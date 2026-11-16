@@ -45,6 +45,7 @@ button{font-family:var(--text);cursor:pointer}
 .btn{height:52px;padding:0 14px;border-radius:10px;border:2px solid var(--line);background:var(--panel);color:var(--ink);font-weight:600;font-size:15px}
 .btn:focus-visible,.link:focus-visible,label.file:focus-within{outline:2px solid var(--tag);outline-offset:2px}
 .btn.on{border-color:var(--tag);color:var(--tag)}
+.btn.dl{display:inline-flex;align-items:center;text-decoration:none}
 .btn.primary{background:var(--tag);border-color:var(--tag);color:var(--tag-ink)}
 
 /* shelf label */
@@ -119,9 +120,8 @@ details{margin-top:12px;font-size:14.5px}summary{cursor:pointer;color:var(--mute
 
   <section class="panel" id="getapp">
     <h2>App letöltése</h2>
-    <button class="btn primary" type="button" id="install">App telepítése a készülékre</button>
-    <p class="note" id="installnote">Telepítés után saját ikonnal, teljes képernyőn indul, és internet nélkül is megnyílik.</p>
-    <p class="note"><a class="link" href="csipogo-arellenorzo.html" download="csipogo-arellenorzo.html">Vagy töltsd le egyetlen fájlként</a></p>
+    <a class="btn primary dl" href="../apk/csipogo-arellenorzo.apk">Android app letöltése (APK)</a>
+    <p class="note">Töltsd le, nyisd meg, és engedélyezd a telepítést. Az app saját ikonnal indul, és a Zebra szkennerét közvetlenül kezeli: csippantás után rögtön keres.</p>
   </section>
 
   <div class="foot">
@@ -138,7 +138,7 @@ var $=function(id){return document.getElementById(id)};
 var scan=$("scan"), result=$("result"), statusEl=$("status"), msg=$("msg");
 var SRC="https://bkvbuszozo0108-alt.github.io/jegy-terminal/csipogo/arlista.json";
 var DB={p:null,chains:[],date:null,count:0,demo:false};
-var hist=[], soundOn=true, audio=null, busy=false;
+var hist=[], soundOn=true, audio=null, busy=false, inApp=false;
 
 function norm(s){return String(s==null?"":s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g," ").trim()}
 function codeKey(v){var s=String(v==null?"":v).trim();if(/^\d+$/.test(s))return s.replace(/^0+/,"")||"0";return s.toLowerCase()}
@@ -286,7 +286,7 @@ function schedule(){
   if(scanned)timer=setTimeout(submit,200);
 }
 ["input","change","compositionend","paste"].forEach(function(ev){scan.addEventListener(ev,function(){setTimeout(schedule,0)})});
-function focusScan(){try{if(document.activeElement!==scan)scan.focus({preventScroll:true})}catch(e){}}
+function focusScan(){if(inApp)return;try{if(document.activeElement!==scan)scan.focus({preventScroll:true})}catch(e){}}
 /* Scans that arrive while the field is not focused: collect the keystrokes here. */
 var kbuf="", ktimer=null;
 function kflush(){clearTimeout(ktimer);var v=kbuf;kbuf="";if(v.length>=4)lookup(v)}
@@ -308,9 +308,9 @@ scan.addEventListener("blur",function(){setTimeout(function(){
 document.addEventListener("visibilitychange",function(){if(!document.hidden)setTimeout(focusScan,100)});
 /* The Jegyterminál launcher hands scanned codes to the page through this function. */
 window.jegyScan=function(code){scan.value="";lookup(code)};
-document.addEventListener("click",function(e){if(!(e.target.closest&&e.target.closest("a,input,#getapp")))focusScan()});
+document.addEventListener("click",function(e){if(!(e.target.closest&&e.target.closest("a,input,#getapp,#kbd")))focusScan()});
 $("kbd").addEventListener("click",function(){
-  scan.focus();
+  try{scan.focus()}catch(e){}
   try{if(navigator.virtualKeyboard&&navigator.virtualKeyboard.show)navigator.virtualKeyboard.show()}catch(e){}
 });
 $("sound").addEventListener("click",function(){soundOn=!soundOn;this.textContent="Hang: "+(soundOn?"be":"ki");this.setAttribute("aria-pressed",soundOn);if(soundOn)beep(true)});
@@ -329,16 +329,9 @@ function renderStatus(){
     '<span class="dot'+(old?"":" on")+'"></span><b>'+DB.count.toLocaleString("hu-HU")+' termék</b><br>árak napja: '+DB.date.toLocaleDateString("hu-HU")+(old?" (régi)":"");
 }
 
-/* ---------- install as app ---------- */
-var deferred=null, standalone=(window.matchMedia&&matchMedia("(display-mode: standalone)").matches)||navigator.standalone;
-if(standalone||location.protocol==="file:")$("getapp").hidden=true;
-window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();deferred=e});
-window.addEventListener("appinstalled",function(){$("getapp").hidden=true});
-$("install").addEventListener("click",function(){
-  if(deferred){deferred.prompt();deferred=null;return}
-  $("installnote").textContent="Nyisd meg a Chrome menüjét (három pont jobb fent), és válaszd: Alkalmazás telepítése vagy Hozzáadás a kezdőképernyőhöz.";
-  $("installnote").style.color="var(--tag)";
-});
+/* ---------- inside the Android app the scanner talks to the page directly ---------- */
+inApp=/CsipogoApp/.test(navigator.userAgent);
+if(inApp||location.protocol==="file:")$("getapp").hidden=true;
 if("serviceWorker" in navigator&&location.protocol==="https:"){try{navigator.serviceWorker.register("sw.js").catch(function(){})}catch(e){}}
 focusScan();
 setTimeout(function(){loadList(false)},300);
