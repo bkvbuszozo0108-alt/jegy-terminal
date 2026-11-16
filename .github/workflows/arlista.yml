@@ -1,0 +1,40 @@
+name: Árlista (Csipogó árellenőrző)
+
+on:
+  schedule:
+    - cron: '40 3,9,14 * * *'
+  push:
+    branches: [main]
+    paths: ['csipogo/**', '.github/workflows/arlista.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: arlista
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Napi Excel letöltése (GVH Árfigyelő)
+        run: curl -fsSL --retry 3 -o arf.xlsx https://cdnarfigyeloprodweu.azureedge.net/excel/arfigyelo_napi_termekadatok.xlsx
+      - name: Átalakítás JSON-ná
+        run: |
+          pip install --quiet openpyxl
+          python3 csipogo/arlista.py arf.xlsx arlista.json
+      - name: Közzététel (gh-pages/csipogo/arlista.json)
+        run: |
+          git config user.name "github-actions"; git config user.email "actions@github.com"
+          for i in 1 2 3; do
+            git fetch origin gh-pages
+            rm -rf /tmp/pages; git worktree prune
+            git worktree add /tmp/pages origin/gh-pages
+            mkdir -p /tmp/pages/csipogo
+            cp arlista.json /tmp/pages/csipogo/arlista.json
+            ( cd /tmp/pages && git add csipogo/arlista.json && (git commit -m "Árlista frissítés" || true) && git push origin HEAD:gh-pages ) && break
+            sleep 5
+          done
