@@ -99,8 +99,8 @@ details{margin-top:12px;font-size:14.5px}summary{cursor:pointer;color:var(--mute
   </header>
 
   <form class="scanbar" id="scanform" autocomplete="off">
-    <input id="scan" type="text" inputmode="none" autocapitalize="off" spellcheck="false" placeholder="Csippantsd le a vonalkódot" aria-label="Vonalkód vagy terméknév">
-    <button class="btn" type="button" id="kbd" aria-pressed="false" title="Kézi beírás billentyűzettel">ABC</button>
+    <input id="scan" type="text" inputmode="text" virtualkeyboardpolicy="manual" enterkeyhint="search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Csippants, vagy írd be a kódot" aria-label="Vonalkód vagy terméknév">
+    <button class="btn" type="button" id="kbd" title="Billentyűzet megnyitása kézi beíráshoz">Billentyűzet</button>
   </form>
 
   <section id="result" aria-live="polite"></section>
@@ -138,7 +138,7 @@ var $=function(id){return document.getElementById(id)};
 var scan=$("scan"), result=$("result"), statusEl=$("status"), msg=$("msg");
 var SRC="https://bkvbuszozo0108-alt.github.io/jegy-terminal/csipogo/arlista.json";
 var DB={p:null,chains:[],date:null,count:0,demo:false};
-var hist=[], soundOn=true, manual=false, audio=null, busy=false;
+var hist=[], soundOn=true, audio=null, busy=false;
 
 function norm(s){return String(s==null?"":s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g," ").trim()}
 function codeKey(v){var s=String(v==null?"":v).trim();if(/^\d+$/.test(s))return s.replace(/^0+/,"")||"0";return s.toLowerCase()}
@@ -269,32 +269,23 @@ function beep(ok){
 
 /* ---------- scanner input: the Zebra's scanner types the code into the focused field ---------- */
 var timer=null;
-function submit(){clearTimeout(timer);var v=scan.value.replace(/[\r\n\t]+/g,"").trim();scan.value="";stamps=[];if(v)lookup(v)}
+function submit(){clearTimeout(timer);var v=scan.value.replace(/[\r\n\t]+/g,"").trim();scan.value="";stamps=[];prevLen=0;if(v)lookup(v)}
 $("scanform").addEventListener("submit",function(e){e.preventDefault();submit()});
 /* Search by itself once the scanner has finished typing; no Enter or button needed.
    Scanner mode: any code, as soon as typing pauses. Keyboard mode (ABC): only when the
    characters arrived in a fast burst, which is a scan and not a finger. */
-var stamps=[];
+var stamps=[], prevLen=0;
 function schedule(){
   clearTimeout(timer);
-  var v=scan.value;
+  var v=scan.value, now=Date.now(), jump=v.length-prevLen;
+  prevLen=v.length;
   if(!v){stamps=[];return}
-  var now=Date.now();stamps.push(now);if(stamps.length>40)stamps.shift();
+  stamps.push(now);if(stamps.length>40)stamps.shift();
   if(v.length<3)return;
-  if(manual){
-    var burst=v.length>=6&&stamps.length>=2&&(now-stamps[0])<Math.max(400,v.length*45);
-    if(!burst)return;
-  }
-  timer=setTimeout(submit,220);
+  var scanned=jump>=4||(v.length>=6&&stamps.length>=2&&(now-stamps[0])<Math.max(400,v.length*45));
+  if(scanned)timer=setTimeout(submit,200);
 }
-["input","keyup","change","compositionend","paste"].forEach(function(ev){scan.addEventListener(ev,function(){setTimeout(schedule,0)})});
-/* Safety net for scanners that fill the field without sending any event. */
-var lastSeen="", stable=0;
-setInterval(function(){
-  var v=scan.value;
-  if(manual||v.length<3){lastSeen=v;stable=0;return}
-  if(v===lastSeen){if(++stable>=2){stable=0;lastSeen="";submit()}}else{lastSeen=v;stable=0}
-},250);
+["input","change","compositionend","paste"].forEach(function(ev){scan.addEventListener(ev,function(){setTimeout(schedule,0)})});
 function focusScan(){try{if(document.activeElement!==scan)scan.focus({preventScroll:true})}catch(e){}}
 /* Scans that arrive while the field is not focused: collect the keystrokes here. */
 var kbuf="", ktimer=null;
@@ -319,10 +310,8 @@ document.addEventListener("visibilitychange",function(){if(!document.hidden)setT
 window.jegyScan=function(code){scan.value="";lookup(code)};
 document.addEventListener("click",function(e){if(!(e.target.closest&&e.target.closest("a,input,#getapp")))focusScan()});
 $("kbd").addEventListener("click",function(){
-  manual=!manual;this.classList.toggle("on",manual);this.setAttribute("aria-pressed",manual);
-  scan.setAttribute("inputmode",manual?"text":"none");
-  scan.placeholder=manual?"Írd be a kódot vagy a nevet":"Csippantsd le a vonalkódot";
-  scan.blur();setTimeout(function(){scan.focus()},50);
+  scan.focus();
+  try{if(navigator.virtualKeyboard&&navigator.virtualKeyboard.show)navigator.virtualKeyboard.show()}catch(e){}
 });
 $("sound").addEventListener("click",function(){soundOn=!soundOn;this.textContent="Hang: "+(soundOn?"be":"ki");this.setAttribute("aria-pressed",soundOn);if(soundOn)beep(true)});
 $("reload").addEventListener("click",function(){$("setup").hidden=false;loadList(false)});
