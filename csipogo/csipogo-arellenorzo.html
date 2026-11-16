@@ -198,6 +198,45 @@ function lookup(text){
   miss(text,"Erre nincs találat.");
 }
 
+/* ---------- price by name: find the same or similar products in the Árfigyelő list ---------- */
+var STOP={a:1,az:1,es:1,is:1,db:1,kg:1,g:1,l:1,ml:1,dl:1,cl:1,x:1,with:1,and:1,de:1,the:1,of:1};
+var IDX=null;
+function toks(t){
+  return norm(String(t).replace(/(\d)[.,](\d)/g,"$1$2").replace(/(\d)\s*(kg|g|ml|dl|cl|l|db)\b/gi,"$1$2 ")).split(" ").filter(function(w){return w.length>1&&!STOP[w]});
+}
+function buildIdx(){
+  var keys=Object.keys(DB.p), df={}, rows=[];
+  keys.forEach(function(k){
+    var set={}; toks(DB.p[k][0]).forEach(function(w){set[w]=1});
+    rows.push(set); for(var w in set)df[w]=(df[w]||0)+1;
+  });
+  IDX={keys:keys,rows:rows,df:df,n:keys.length,src:DB.p,sizes:rows.map(function(r){return Object.keys(r).length})};
+}
+function similar(name,brand,qty,skipKey){
+  if(!DB.p)return[];
+  if(!IDX||IDX.src!==DB.p)buildIdx();
+  var q={}; toks([brand||"",name||"",qty||""].join(" ")).forEach(function(w){q[w]=1});
+  var words=Object.keys(q); if(!words.length)return[];
+  var wt={}, total=0;
+  words.forEach(function(w){var d=IDX.df[w]||0;wt[w]=/^\d/.test(w)?0.6:Math.log(1+IDX.n/(1+d));total+=wt[w]});
+  var out=[];
+  for(var i=0;i<IDX.n;i++){
+    var set=IDX.rows[i], sc=0, hits=0, all=0;
+    for(var j=0;j<words.length;j++){var w=words[j];if(set[w]){sc+=wt[w];all++;if(!/^\d/.test(w))hits++}}
+    if(hits>=2&&sc/total>=0.45&&IDX.keys[i]!==skipKey)out.push([sc/total,IDX.keys[i],IDX.sizes[i]-all]);
+  }
+  out.sort(function(a,b){return (b[0]-0.03*b[2])-(a[0]-0.03*a[2])});
+  return out.slice(0,6).map(function(x){var p=product(x[1]);p.score=x[0];return p}).filter(function(p){return p.lo!=null});
+}
+function similarHtml(list,title){
+  if(!list.length)return"";
+  return'<div class="panel" style="margin-top:12px"><h2>'+title+'</h2><div class="rows">'+list.map(function(p){
+    return'<div class="row"><button type="button" data-code="'+esc(p.key)+'"><span class="n">'+esc(p.name)+'<span class="u">'+esc(p.offers.map(function(o){return o.chain}).join(", "))+'</span></span><span class="p">'+ft(p.lo)+' Ft</span></button></div>'}).join("")+'</div></div>';
+}
+function webLink(name){
+  return'<p style="margin:12px 0 0"><a class="btn dl" href="https://www.google.com/search?q='+encodeURIComponent(name+" ár")+'" target="_blank" rel="noopener">Ár keresése a weben</a></p>';
+}
+
 /* ---------- products outside the Árfigyelő list: open product databases (name and details, no price) ---------- */
 var WORLD=["https://world.openfoodfacts.org","https://world.openbeautyfacts.org","https://world.openproductsfacts.org","https://world.openpetfoodfacts.org"];
 var wcache={}, wseq=0;
@@ -227,7 +266,11 @@ function showWorld(code,p){
   var h='<div class="tag world flash">';
   if(p.brands)h+='<div class="cat">'+esc(String(p.brands).split(",")[0])+'</div>';
   h+='<div class="name">'+esc(name)+'</div>';
-  h+='<div class="sub">Ár nem ismert: ez a termék nincs a GVH Árfigyelő listájában.</div>';
+  var sim=similar(name,p.brands,p.quantity,null), top=sim.length&&sim[0].score>=0.7?sim[0]:null;
+  if(top){
+    h+='<div class="price">'+ft(top.lo)+'<small>Ft körül</small></div>';
+    h+='<div class="sub">Név alapján talált ár: '+esc(top.name)+' ('+esc(top.offers[0].chain)+'). Ellenőrizd, hogy ugyanaz a termék-e.</div>';
+  }else h+='<div class="sub">Pontos ár nem ismert: ez a vonalkód nincs a GVH Árfigyelő listájában.</div>';
   h+='<div class="code"><span>'+esc(code)+'</span><span>'+esc(p.quantity||"")+'</span></div></div>';
   var ing=String(p.ingredients_text_hu||p.ingredients_text||"").replace(/_/g,"");
   if(ing.length>260)ing=ing.slice(0,260)+"…";
@@ -235,9 +278,11 @@ function showWorld(code,p){
     ["Jelölések",p.labels],["Nutri-Score",p.nutriscore_grade&&/^[a-e]$/.test(p.nutriscore_grade)?p.nutriscore_grade.toUpperCase():""],
     ["Forgalmazás",p.countries],["Összetevők",ing]].filter(function(x){return x[1]});
   info.push(["Adat forrása","Open Food Facts"]);
+  h+=similarHtml(sim,"Árak név alapján (Árfigyelő)");
+  h+=webLink((p.brands?String(p.brands).split(",")[0]+" ":"")+name+(p.quantity?" "+p.quantity:""));
   h+='<div class="panel" style="margin-top:12px"><h2>Tudnivalók</h2><dl>'+info.map(function(x){return"<dt>"+esc(x[0])+"</dt><dd>"+esc(x[1])+"</dd>"}).join("")+'</dl></div>';
   result.innerHTML=h;
-  addHist({key:code,name:name,lo:null});
+  addHist({key:code,name:name,lo:top?top.lo:null});
   window.scrollTo(0,0);
 }
 function unitLabel(p){return p.unit?" / "+esc(p.unit):""}
@@ -265,6 +310,8 @@ function show(p){
     });
     h+='</div></div>';
   }
+  h+=similarHtml(similar(p.name,"","",p.key),"Hasonló termékek ára");
+  h+=webLink(p.name);
   var info=[];
   if(p.cat)info.push(["Kategória",p.cat]);
   if(packTxt)info.push(["Kiszerelés",packTxt]);
