@@ -277,9 +277,28 @@ scan.addEventListener("input",function(){
   if(scan.value.replace(/\D/g,"").length>=8)timer=setTimeout(submit,250);
 });
 function focusScan(){try{if(document.activeElement!==scan)scan.focus({preventScroll:true})}catch(e){}}
+/* Scans that arrive while the field is not focused: collect the keystrokes here. */
+var kbuf="", ktimer=null;
+function kflush(){clearTimeout(ktimer);var v=kbuf;kbuf="";if(v.length>=4)lookup(v)}
 document.addEventListener("keydown",function(e){
-  if(e.target!==scan&&!e.ctrlKey&&!e.metaKey&&e.key&&e.key.length===1&&e.key!==" ")focusScan();
+  if(e.target===scan||e.ctrlKey||e.metaKey||e.altKey)return;
+  var t=e.target&&e.target.tagName;if(t==="INPUT"||t==="TEXTAREA")return;
+  if(e.key==="Enter"){if(kbuf.length>=4){e.preventDefault();kflush()}return}
+  if(e.key&&e.key.length===1&&e.key!==" "){kbuf+=e.key;clearTimeout(ktimer);ktimer=setTimeout(kflush,300);e.preventDefault()}
+  else focusScan();
+},true);
+document.addEventListener("paste",function(e){
+  if(e.target===scan)return;
+  try{var t=(e.clipboardData||window.clipboardData).getData("text");if(t){e.preventDefault();lookup(t)}}catch(x){}
 });
+/* Keep the scan field focused so the scanner always has somewhere to type. */
+scan.addEventListener("blur",function(){setTimeout(function(){
+  var a=document.activeElement;if(!a||a===document.body||a.tagName==="BUTTON")focusScan();
+},150)});
+document.addEventListener("visibilitychange",function(){if(!document.hidden)setTimeout(focusScan,100)});
+window.addEventListener("focus",function(){setTimeout(focusScan,100)});
+/* The Jegyterminál launcher hands scanned codes to the page through this function. */
+window.jegyScan=function(code){scan.value="";lookup(code)};
 document.addEventListener("click",function(e){if(!(e.target.closest&&e.target.closest("a,input,#getapp")))focusScan()});
 $("kbd").addEventListener("click",function(){
   manual=!manual;this.classList.toggle("on",manual);this.setAttribute("aria-pressed",manual);
