@@ -1,0 +1,43 @@
+name: Magyar termék-adatbázis (Csipogó árellenőrző)
+
+on:
+  schedule:
+    - cron: '15 2 * * 1'
+  push:
+    branches: [main]
+    paths: ['csipogo/termekek.py', '.github/workflows/termekek.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: termekek
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Open Food Facts exportok szűrése (magyar termékek)
+        run: |
+          set -o pipefail
+          for site in openfoodfacts openbeautyfacts openproductsfacts openpetfoodfacts; do
+            echo "== $site"
+            curl -fsSL --retry 3 "https://static.$site.org/data/en.$site.org.products.csv.gz" | gunzip -c | python3 csipogo/termekek.py hu || echo "kihagyva: $site"
+          done
+          test "$(python3 -c 'import json;print(json.load(open("hu/meta.json"))["count"])')" -gt 1000
+      - name: Közzététel (gh-pages/csipogo/hu/)
+        run: |
+          git config user.name "github-actions"; git config user.email "actions@github.com"
+          for i in 1 2 3; do
+            git fetch origin gh-pages
+            rm -rf /tmp/pages; git worktree prune
+            git worktree add /tmp/pages origin/gh-pages
+            rm -rf /tmp/pages/csipogo/hu; mkdir -p /tmp/pages/csipogo
+            cp -r hu /tmp/pages/csipogo/hu
+            ( cd /tmp/pages && git add -A csipogo/hu && (git commit -q -m "Magyar termék-adatbázis frissítés" || true) && git push origin HEAD:gh-pages ) && break
+            sleep 5
+          done
