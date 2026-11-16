@@ -17,16 +17,19 @@ for f in os.listdir(out):
 rd = csv.reader(sys.stdin, delimiter="\t", quoting=csv.QUOTE_NONE)
 head = next(rd)
 col = {n: i for i, n in enumerate(head)}
-need = ["code", "product_name", "brands", "quantity"]
-for n in need:
-    if n not in col:
-        sys.exit("Hiányzó oszlop: " + n)
-ci = [col[n] for n in need]
+def pick(*names):
+    for n in names:
+        if n in col:
+            return col[n]
+    return None
+ci = [pick("code"), pick("product_name", "generic_name"), pick("brands", "brands_en", "brands_tags"), pick("quantity")]
+if ci[0] is None or ci[1] is None:
+    sys.exit("Hiányzó oszlop (code / product_name); fejléc: " + ", ".join(head[:40]))
 cc = [col[n] for n in ("countries_tags", "countries_en", "countries") if n in col]
 added = seen = 0
 for r in rd:
     seen += 1
-    if len(r) <= max(ci):
+    if len(r) <= ci[1]:
         continue
     code = r[ci[0]].strip()
     if not code.isdigit() or not (6 <= len(code) <= 14):
@@ -34,7 +37,8 @@ for r in rd:
     hu = code.lstrip("0").startswith("599") or any(i < len(r) and "hungary" in r[i].lower() for i in cc)
     if not hu:
         continue
-    name, brand, qty = (r[i].strip()[:120] for i in ci[1:])
+    name, brand, qty = ((r[i].strip()[:120] if i is not None and i < len(r) else "") for i in ci[1:])
+    brand = brand.replace("en:", "").replace("-", " ") if "brands" not in col else brand
     if not name and not brand:
         continue
     key = code.lstrip("0") or "0"
