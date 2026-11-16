@@ -56,6 +56,7 @@ button{font-family:var(--text);cursor:pointer}
 .tag .price small{font-size:30px;font-weight:700}
 .tag .sub{font-size:15px;font-weight:500}
 .tag .code{font-variant-numeric:tabular-nums;font-size:13px;font-weight:600;letter-spacing:.12em;border-top:2px solid var(--tag-ink);padding-top:8px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.tag.world{background:var(--ink);color:var(--tag-ink)}
 .tag.miss{background:var(--panel);color:var(--ink);border:2px solid var(--bad)}
 .tag.miss .name{color:var(--bad)}
 .tag.miss .code{border-color:var(--line)}
@@ -110,7 +111,7 @@ details{margin-top:12px;font-size:14.5px}summary{cursor:pointer;color:var(--mute
     <h2>Árlista</h2>
     <button class="btn primary" type="button" id="web">Árlista letöltése</button>
     <p class="msg" id="msg">Árlista letöltése…</p>
-    <p class="note">Az app megnyitáskor magától letölti a GVH Árfigyelő aznapi árait. Internet nélkül a legutóbb letöltött listát használja.</p>
+    <p class="note">Az app megnyitáskor magától letölti a GVH Árfigyelő aznapi árait. Internet nélkül a legutóbb letöltött listát használja. Ami nincs az Árfigyelőben, azt a nemzetközi termékadatbázisban keresi (ár nélkül, internet kell hozzá).</p>
   </section>
 
   <section class="panel hist" id="histbox" hidden>
@@ -193,7 +194,51 @@ function lookup(text){
     if(list.length===1){show(list[0]);return}
     if(list.length){choices(text,list);return}
   }
-  miss(text,"Ez a kód nincs az Árfigyelő listájában. Az Árfigyelő csak a figyelt kategóriák termékeit tartalmazza.");
+  if(/^\d{8,14}$/.test(text)){world(text);return}
+  miss(text,"Erre nincs találat.");
+}
+
+/* ---------- products outside the Árfigyelő list: open product databases (name and details, no price) ---------- */
+var WORLD=["https://world.openfoodfacts.org","https://world.openbeautyfacts.org","https://world.openproductsfacts.org","https://world.openpetfoodfacts.org"];
+var wcache={}, wseq=0;
+function world(code){
+  var my=++wseq;
+  if(wcache[code]!==undefined){wcache[code]?showWorld(code,wcache[code]):miss(code,"Ezt a kódot egyik adatbázis sem ismeri.");return}
+  result.innerHTML='<div class="tag miss"><div class="name" style="color:var(--ink)">Keresés…</div><div class="sub">Nincs az Árfigyelőben, keresem a nemzetközi termékadatbázisban.</div><div class="code"><span>'+esc(code)+'</span></div></div>';
+  var i=0, failed=false;
+  (function next(){
+    if(my!==wseq)return;
+    if(i>=WORLD.length){
+      if(!failed)wcache[code]=null;
+      miss(code,failed?"Nem sikerült elérni a termékadatbázist. Ellenőrizd az internetet.":"Ezt a kódot egyik adatbázis sem ismeri.");return}
+    var u=WORLD[i++]+"/api/v2/product/"+encodeURIComponent(code)+".json?lc=hu&fields=product_name,product_name_hu,generic_name,generic_name_hu,brands,quantity,categories,labels,countries,nutriscore_grade,ingredients_text_hu,ingredients_text";
+    fetch(u).then(function(r){return r.json()}).then(function(d){
+      if(my!==wseq)return;
+      var p=d&&d.product;
+      if(d&&(d.status===1||d.status==="success")&&p&&(p.product_name_hu||p.product_name||p.generic_name_hu||p.generic_name||p.brands)){wcache[code]=p;showWorld(code,p)}
+      else next();
+    }).catch(function(){failed=true;next()});
+  })();
+}
+function showWorld(code,p){
+  beep(true);
+  var name=p.product_name_hu||p.product_name||p.generic_name_hu||p.generic_name||p.brands;
+  var cat=String(p.categories||"").split(",").pop().trim();
+  var h='<div class="tag world flash">';
+  if(p.brands)h+='<div class="cat">'+esc(String(p.brands).split(",")[0])+'</div>';
+  h+='<div class="name">'+esc(name)+'</div>';
+  h+='<div class="sub">Ár nem ismert: ez a termék nincs a GVH Árfigyelő listájában.</div>';
+  h+='<div class="code"><span>'+esc(code)+'</span><span>'+esc(p.quantity||"")+'</span></div></div>';
+  var ing=String(p.ingredients_text_hu||p.ingredients_text||"").replace(/_/g,"");
+  if(ing.length>260)ing=ing.slice(0,260)+"…";
+  var info=[["Márka",p.brands],["Kiszerelés",p.quantity],["Kategória",cat],["Megnevezés",p.generic_name_hu||p.generic_name],
+    ["Jelölések",p.labels],["Nutri-Score",p.nutriscore_grade&&/^[a-e]$/.test(p.nutriscore_grade)?p.nutriscore_grade.toUpperCase():""],
+    ["Forgalmazás",p.countries],["Összetevők",ing]].filter(function(x){return x[1]});
+  info.push(["Adat forrása","Open Food Facts"]);
+  h+='<div class="panel" style="margin-top:12px"><h2>Tudnivalók</h2><dl>'+info.map(function(x){return"<dt>"+esc(x[0])+"</dt><dd>"+esc(x[1])+"</dd>"}).join("")+'</dl></div>';
+  result.innerHTML=h;
+  addHist({key:code,name:name,lo:null});
+  window.scrollTo(0,0);
 }
 function unitLabel(p){return p.unit?" / "+esc(p.unit):""}
 function show(p){
