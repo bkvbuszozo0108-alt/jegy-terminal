@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0f2a1c">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Rendszám matrica szkenner</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="../icon-192.png">
+<link rel="apple-touch-icon" href="../icon-192.png">
+<style>
+:root{color-scheme:dark;--bg:#0f2a1c;--panel:#122e1e;--line:#2f6a44;--fg:#e8f1ea;--mut:#9ccaa9;--acc:#3ddc84;--bad:#ff6b5e;--warn:#ffd166}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 Roboto,"Segoe UI",system-ui,sans-serif;overflow:hidden}
+.app{height:100%;max-width:560px;margin:0 auto;display:flex;flex-direction:column}
+header{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#0b2016;border-bottom:1px solid var(--line)}
+header h1{margin:0;font-size:15px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;flex:1}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--acc);box-shadow:0 0 0 0 rgba(61,220,132,.7);animation:p 1.8s infinite}
+@keyframes p{70%{box-shadow:0 0 0 9px rgba(61,220,132,0)}100%{box-shadow:0 0 0 0 rgba(61,220,132,0)}}
+.cnt{font:700 12px ui-monospace,Consolas,monospace;color:var(--mut)}
+main{flex:1;overflow-y:auto;padding:12px 12px 20px}
+.res{border:2px solid var(--line);background:var(--panel);border-radius:12px;padding:16px 14px;text-align:center;transition:border-color .15s,background .15s}
+.res.ok{border-color:var(--acc);background:#143a26}
+.res.unk{border-color:var(--warn);background:#33300f}
+.res.flash{animation:fl .35s}
+@keyframes fl{0%{transform:scale(.97);filter:brightness(1.6)}100%{transform:none;filter:none}}
+.hint{color:var(--mut);padding:26px 6px;font-size:14px}
+.hint b{display:block;color:var(--fg);font-size:17px;margin-bottom:6px}
+.plate{display:inline-flex;align-items:stretch;background:#fff;color:#111;border:3px solid #111;border-radius:8px;overflow:hidden;box-shadow:0 3px 0 rgba(0,0,0,.35);max-width:100%}
+.plate .eu{background:#1f3fa8;color:#fff;width:34px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 0 5px;font-weight:700;font-size:15px;position:relative}
+.plate .eu:before{content:"";position:absolute;top:8px;width:16px;height:16px;border-radius:50%;border:2px dotted #ffd200}
+.plate .no{padding:4px 14px 5px;font:800 40px/1.15 "Arial Narrow","Roboto Condensed",Arial,sans-serif;letter-spacing:.06em;white-space:nowrap}
+.kind{margin-top:10px;font-weight:700;font-size:14px;letter-spacing:.04em}
+.res.ok .kind{color:var(--acc)}.res.unk .kind{color:var(--warn)}
+.big{font:700 22px ui-monospace,Consolas,monospace;word-break:break-all}
+table{width:100%;border-collapse:collapse;margin-top:12px;text-align:left;font-size:13px}
+td{padding:6px 4px;border-top:1px solid rgba(255,255,255,.1);vertical-align:top}
+td:first-child{color:var(--mut);white-space:nowrap;width:1%;padding-right:12px}
+td:last-child{font-family:ui-monospace,Consolas,monospace;word-break:break-all}
+.row{display:flex;gap:8px;margin-top:12px}
+input{flex:1;min-width:0;background:#0b2016;border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:11px 12px;font:inherit;text-transform:uppercase}
+input::placeholder{text-transform:none;color:#6f9a7d}
+button{border:1px solid var(--line);background:#163a25;color:var(--fg);border-radius:8px;padding:11px 14px;font:inherit;font-weight:700;font-size:13px;letter-spacing:.05em;text-transform:uppercase;cursor:pointer}
+button.pri{background:var(--acc);border-color:var(--acc);color:#0f2a1c}
+button:active{filter:brightness(1.25)}
+.cam{margin-top:12px;border-radius:12px;overflow:hidden;background:#000;position:relative;aspect-ratio:4/3}
+.cam video{width:100%;height:100%;object-fit:cover;display:block}
+.cam:after{content:"";position:absolute;left:8%;right:8%;top:50%;height:2px;background:#ff3b30;box-shadow:0 0 8px #ff3b30}
+h2{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--mut);margin:20px 2px 8px;display:flex;align-items:center}
+h2 span{flex:1}
+h2 button{padding:5px 9px;font-size:10px;margin-left:6px}
+ul{list-style:none;margin:0;padding:0}
+li{display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid var(--line);background:var(--panel);border-radius:8px;margin-bottom:6px}
+li .p{font:700 17px ui-monospace,Consolas,monospace;flex:1;word-break:break-all}
+li .x{font-size:11px;color:var(--mut);text-align:right;white-space:nowrap}
+li .n{background:var(--acc);color:#0f2a1c;border-radius:10px;padding:1px 7px;font-weight:700;font-size:11px}
+li.u .p{color:var(--warn);font-size:13px}
+.empty{color:var(--mut);font-size:13px;padding:6px 2px}
+.msg{color:var(--bad);font-size:13px;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="app">
+<header><div class="dot"></div><h1>Rendszám matrica</h1><div class="cnt" id="cnt">0 db</div></header>
+<main>
+  <div class="res" id="res"><div class="hint"><b>Olvasd be a szélvédő matricát</b>Célozz a Zebra szkennerével a regisztrációs matrica vonalkódjára (vagy 2D kódjára), és nyomd meg a szkenner gombot.</div></div>
+
+  <div class="row">
+    <input id="inp" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="search" placeholder="Kód vagy rendszám kézzel">
+    <button class="pri" id="go">OK</button>
+  </div>
+  <div class="row">
+    <button id="camBtn" style="flex:1">Kamera be</button>
+    <button id="sndBtn">Hang: be</button>
+  </div>
+  <div class="msg" id="msg" hidden></div>
+  <div class="cam" id="cam" hidden><video id="vid" playsinline muted></video></div>
+
+  <h2><span>Előzmények</span><button id="csv">Másolás</button><button id="clr">Törlés</button></h2>
+  <ul id="list"></ul>
+</main>
+</div>
+<script>
+'use strict';
+var $=function(id){return document.getElementById(id)};
+var KEY='matrica-szkenner-v1', hist=[], sound=true;
+try{ var s=JSON.parse(localStorage.getItem(KEY)||'{}'); hist=Array.isArray(s.hist)?s.hist:[]; sound=s.sound!==false; }catch(e){}
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify({hist:hist.slice(0,300),sound:sound})); }catch(e){} }
+
+/* ---- a kód értelmezése ---- */
+function parse(raw){
+  var t=String(raw||'').replace(/[\u0000-\u001f]/g,' ').trim(), u=t.toUpperCase();
+  var c=u.replace(/[^A-Z0-9]/g,''), m, r={raw:t,plate:null,kind:'',rest:''};
+  function uj(a,b,n){ r.plate=a+' '+b+'-'+n; r.kind='Új típusú rendszám (2022-től)'; }
+  function regi(a,n){ r.plate=a+'-'+n; r.kind='Hagyományos rendszám (2022 előtt)'; }
+  if(m=/^([A-Z]{2})([A-Z]{2})(\d{3})$/.exec(c)) uj(m[1],m[2],m[3]);
+  else if(m=/^([A-Z]{3})(\d{3})$/.exec(c)) regi(m[1],m[2]);
+  else if(m=/^([A-Z]{4,6})(\d{1,2})$/.exec(c)){ r.plate=m[1]+'-'+m[2]; r.kind='Egyéni rendszám'; }
+  else if(/^[A-HJ-NPR-Z0-9]{17}$/.test(c)&&/\d/.test(c)&&/[A-Z]/.test(c)){ r.kind='Alvázszámnak (VIN) tűnik'; r.vin=c; }
+  else if(m=/(^|[^A-Z0-9])([A-Z]{2})[ -]?([A-Z]{2})[ -]?(\d{3})(?![A-Z0-9])/.exec(u)){ uj(m[2],m[3],m[4]); r.rest=(u.slice(0,m.index)+' '+u.slice(m.index+m[0].length)).trim(); }
+  else if(m=/(^|[^A-Z0-9])([A-Z]{3})[ -]?(\d{3})(?![A-Z0-9])/.exec(u)){ regi(m[2],m[3]); r.rest=(u.slice(0,m.index)+' '+u.slice(m.index+m[0].length)).trim(); }
+  else if(m=/^([A-Z]{2})([A-Z]{2})(\d{3})(\d+)$/.exec(c)){ uj(m[1],m[2],m[3]); r.rest=m[4]; }
+  else if(m=/^([A-Z]{3})(\d{3})(\d+)$/.exec(c)){ regi(m[1],m[2]); r.rest=m[3]; }
+  else if(m=/^(\d+)([A-Z]{3})(\d{3})$/.exec(c)){ regi(m[2],m[3]); r.rest=m[1]; }
+  if(!r.plate&&!r.kind) r.kind=/^\d+$/.test(c)&&c?'Csak számsor – lehet a matrica sorszáma':'Nem ismerhető fel rendszám a kódban';
+  return r;
+}
+
+/* ---- hang, rezgés ---- */
+var ac=null;
+function beep(ok){
+  if(navigator.vibrate) try{ navigator.vibrate(ok?60:[60,60,60]); }catch(e){}
+  if(!sound) return;
+  try{ ac=ac||new (window.AudioContext||window.webkitAudioContext)(); if(ac.state==='suspended') ac.resume();
+    var o=ac.createOscillator(), g=ac.createGain(), n=ac.currentTime; o.type='square'; o.frequency.value=ok?2300:420;
+    g.gain.setValueAtTime(.18,n); g.gain.exponentialRampToValueAtTime(.001,n+(ok?.14:.4)); o.connect(g); g.connect(ac.destination); o.start(n); o.stop(n+(ok?.15:.42)); }catch(e){}
+}
+
+/* ---- megjelenítés ---- */
+function el(tag,cls,txt){ var e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) e.textContent=txt; return e; }
+function tr(tb,k,v){ if(!v) return; var r=el('tr'); r.appendChild(el('td','',k)); r.appendChild(el('td','',v)); tb.appendChild(r); }
+function hm(t){ var d=new Date(t), p=function(n){return (n<10?'0':'')+n}; return p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds()); }
+function ymd(t){ var d=new Date(t); return d.getFullYear()+'.'+(d.getMonth()+1)+'.'+d.getDate()+'.'; }
+function keyOf(h){ return h.plate||h.raw; }
+function show(r,t,times){
+  var box=$('res'); box.textContent=''; box.className='res '+(r.plate?'ok':'unk');
+  if(r.plate){ var p=el('div','plate'); p.appendChild(el('div','eu','H')); p.appendChild(el('div','no',r.plate)); box.appendChild(p); }
+  else box.appendChild(el('div','big',r.vin||r.raw));
+  box.appendChild(el('div','kind',r.kind));
+  var tb=el('table');
+  tr(tb,'Rendszám',r.plate); tr(tb,'Egyéb adat a kódban',r.rest); tr(tb,'Nyers kód',r.raw); tr(tb,'Hossz',r.raw.length+' karakter');
+  tr(tb,'Beolvasva',ymd(t)+' '+hm(t)); tr(tb,'Eddig',times+'× olvastad be');
+  box.appendChild(tb);
+  void box.offsetWidth; box.classList.add('flash');
+}
+function render(){
+  var ul=$('list'); ul.textContent=''; $('cnt').textContent=hist.length+' db';
+  if(!hist.length){ ul.appendChild(el('div','empty','Még nincs beolvasás.')); return; }
+  var seen={}; hist.forEach(function(h){ var k=keyOf(h); seen[k]=(seen[k]||0)+1; });
+  var done={};
+  hist.forEach(function(h){ var k=keyOf(h); if(done[k]) return; done[k]=1;
+    var li=el('li',h.plate?'':'u'); li.appendChild(el('div','p',k));
+    if(seen[k]>1) li.appendChild(el('div','n',seen[k]+'×'));
+    li.appendChild(el('div','x',ymd(h.t)+' '+hm(h.t)));
+    li.onclick=function(){ show(parse(h.raw),h.t,seen[k]); document.querySelector('main').scrollTop=0; };
+    ul.appendChild(li); });
+}
+
+/* ---- beolvasás kezelése ---- */
+var last='', lastAt=0;
+function scan(code){
+  code=String(code||'').trim(); if(!code) return;
+  var now=Date.now(); if(code===last&&now-lastAt<1500) return; last=code; lastAt=now;
+  var r=parse(code); hist.unshift({t:now,raw:r.raw,plate:r.plate});
+  var k=r.plate||r.raw, times=hist.filter(function(h){return keyOf(h)===k}).length;
+  save(); show(r,now,times); render(); beep(!!r.plate); $('inp').value=''; $('inp').blur();
+  document.querySelector('main').scrollTop=0;
+}
+window.jegyScan=scan; /* a launcher / DataWedge Intent ide adja a kódot */
+
+/* Zebra beépített szkenner billentyű-kimenete: gyors karaktersor, a végén Enter (vagy rövid szünet) */
+var buf='', bufT=0;
+document.addEventListener('keydown',function(e){
+  if(e.target===$('inp')) return;
+  if(e.key==='Enter'||e.key==='Tab'){ clearTimeout(bufT); if(buf.length>=3){ e.preventDefault(); var b=buf; buf=''; scan(b); } buf=''; return; }
+  if(e.key&&e.key.length===1&&!e.ctrlKey&&!e.metaKey&&!e.altKey){ buf+=e.key; clearTimeout(bufT);
+    bufT=setTimeout(function(){ var b=buf; buf=''; if(b.length>=6) scan(b); },250); }
+});
+$('inp').addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); scan($('inp').value); } });
+$('go').onclick=function(){ scan($('inp').value); };
+
+/* ---- gombok ---- */
+function sndLabel(){ $('sndBtn').textContent='Hang: '+(sound?'be':'ki'); }
+$('sndBtn').onclick=function(){ sound=!sound; save(); sndLabel(); if(sound) beep(true); };
+$('clr').onclick=function(){ if(!hist.length) return; if(confirm('Törlöd az összes beolvasást ('+hist.length+' db)?')){ hist=[]; save(); render(); } };
+$('csv').onclick=function(){
+  if(!hist.length) return;
+  var txt='datum;ido;rendszam;nyers_kod\n'+hist.map(function(h){ return [ymd(h.t),hm(h.t),h.plate||'',h.raw].join(';'); }).join('\n');
+  var done=function(){ $('csv').textContent='Kimásolva'; setTimeout(function(){ $('csv').textContent='Másolás'; },1500); };
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done,function(){ prompt('Lista:',txt); }); else prompt('Lista:',txt);
+};
+
+/* ---- kamera (ha nem a beépített szkennerrel olvasol) ---- */
+var stream=null, camT=0, zx=null;
+function msg(t){ $('msg').textContent=t||''; $('msg').hidden=!t; }
+function camOff(){ clearInterval(camT); camT=0; if(zx){ try{ zx.reset(); }catch(e){} zx=null; }
+  if(stream){ stream.getTracks().forEach(function(t){t.stop()}); stream=null; } $('vid').srcObject=null; $('cam').hidden=true; $('camBtn').textContent='Kamera be'; }
+function loadZX(cb){ if(window.ZXing) return cb(); var s=document.createElement('script'); s.src='https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js';
+  s.onload=cb; s.onerror=function(){ msg('A kamerás olvasó nem tölthető be (nincs internet). A beépített szkenner ettől még működik.'); camOff(); }; document.head.appendChild(s); }
+function camOn(){
+  msg(''); if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ msg('Ezen az eszközön a böngészőből nem érhető el a kamera.'); return; }
+  $('cam').hidden=false; $('camBtn').textContent='Kamera ki';
+  if('BarcodeDetector' in window){
+    navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280}},audio:false}).then(function(st){
+      stream=st; var v=$('vid'); v.srcObject=st; v.play(); var det=new BarcodeDetector(), busy=false;
+      camT=setInterval(function(){ if(busy||v.readyState<2) return; busy=true;
+        det.detect(v).then(function(c){ busy=false; if(c&&c[0]&&c[0].rawValue) scan(c[0].rawValue); },function(){ busy=false; }); },220);
+    },function(){ msg('A kamera nem indult el – engedélyezd a kamerát a böngészőben.'); camOff(); });
+  } else loadZX(function(){ try{ zx=new ZXing.BrowserMultiFormatReader();
+      zx.decodeFromConstraints({video:{facingMode:{ideal:'environment'}},audio:false},$('vid'),function(res){ if(res) scan(res.getText()); })
+        .catch(function(){ msg('A kamera nem indult el – engedélyezd a kamerát a böngészőben.'); camOff(); });
+    }catch(e){ msg('A kamerás olvasó nem indult el.'); camOff(); } });
+}
+$('camBtn').onclick=function(){ if($('cam').hidden) camOn(); else camOff(); };
+document.addEventListener('visibilitychange',function(){ if(document.hidden&&!$('cam').hidden) camOff(); });
+
+sndLabel(); render();
+if('serviceWorker' in navigator) navigator.serviceWorker.register('../sw.js').catch(function(){});
+</script>
+</body>
+</html>
