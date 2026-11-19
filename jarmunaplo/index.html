@@ -73,7 +73,10 @@ main{padding-block:12px 40px}
 .plate i{background:#1d4ea3;color:#fff;font:700 .6rem/1 var(--body);font-style:normal;display:flex;align-items:flex-end;justify-content:center;padding:0 4px 3px;min-width:16px}
 .plate b{padding:5px 7px;font-weight:700}
 .plate.big{font-size:1.6rem;border-width:3px;border-radius:7px}.plate.big i{font-size:.8rem;min-width:24px;padding-bottom:5px}.plate.big b{padding:8px 12px}
-.plate.none b{color:#777;font-weight:500}
+.idtag{display:inline-flex;flex-direction:column;align-items:flex-start;justify-content:center;border:2px solid var(--brand);border-radius:5px;background:var(--surface);padding:3px 8px;min-width:92px;line-height:1.05}
+.idtag i{font:600 .58rem/1 var(--body);font-style:normal;letter-spacing:.08em;text-transform:uppercase;color:var(--brand)}
+.idtag b{font:700 .95rem/1.15 var(--mono);color:var(--ink);white-space:nowrap}
+.idtag.big{border-width:3px;border-radius:7px;padding:6px 14px}.idtag.big i{font-size:.75rem}.idtag.big b{font-size:1.6rem}
 .cat{font:600 .7rem/1 var(--display);letter-spacing:.08em;text-transform:uppercase;color:#fff;border-radius:4px;padding:4px 6px;display:inline-block}
 .route{font:700 .95rem/1 var(--display);border-radius:5px;padding:5px 8px;min-width:38px;text-align:center;display:inline-block;color:#fff;background:var(--c-busz)}
 .livechip{font-size:.72rem;font-weight:700;color:var(--ok);display:flex;align-items:center;gap:5px;white-space:nowrap}
@@ -353,7 +356,10 @@ function merged(){
   live.list.forEach(v=>{ const c=by[v.id]||{id:v.id,firstSeen:live.ts}; by[v.id]=Object.assign(c,{plate:v.plate||c.plate,label:v.label||c.label,model:v.model||c.model,type:v.type||c.type,lastSeen:live.ts,lastRoute:v.route||c.lastRoute,live:v}); });
   return Object.values(by);
 }
-function plateEl(p,big){ const s=el('span','plate'+(big?' big':'')+(p?'':' none')); s.append(el('i','', 'H'), el('b','', p?formatPlate(p):'nincs rendszám')); return s; }
+function shortId(id){ return String(id||'').replace(/^[A-Z]+_/,''); }
+function plateEl(p,big,id){
+  if(p){ const s=el('span','plate'+(big?' big':'')); s.append(el('i','','H'),el('b','',formatPlate(p))); return s; }
+  const s=el('span','idtag'+(big?' big':'')); s.append(el('i','','Azonosító'),el('b','',shortId(id)||'—')); return s; }
 function formatPlate(p){ p=String(p).toUpperCase().replace(/[^A-Z0-9]/g,''); let m=p.match(/^([A-Z]{2})([A-Z]{2})(\d{3})$/); if(m) return m[1]+' '+m[2]+'-'+m[3]; m=p.match(/^([A-Z]{3})(\d{3})$/); if(m) return m[1]+'-'+m[2]; return p; }
 function catEl(t){ const s=el('span','cat',CATNAME[t]||'Egyéb'); s.style.background='var(--c-'+(CATNAME[t]?t:'egyeb')+')'; return s; }
 function routeEl(v){ const s=el('span','route',v.route||'?'); if(v.color) s.style.background='#'+v.color.replace('#',''); else s.style.background='var(--c-'+(v.type||'busz')+')'; if(v.textColor) s.style.color='#'+v.textColor.replace('#',''); return s; }
@@ -381,7 +387,7 @@ function renderList(){
     mid.append(t1,t2);
     const right=el('div',''); right.style.cssText='display:flex;flex-direction:column;align-items:flex-end;gap:4px';
     if(v.live){ right.append(routeEl(v.live)); const lc=el('span','livechip'); lc.append(el('span','dot live'),'élő'); right.append(lc); } else right.append(catEl(v.type));
-    r.append(plateEl(v.plate),mid,right);
+    r.append(plateEl(v.plate,false,v.id),mid,right);
     r.onclick=()=>openVehicle(v.id);
     box.appendChild(r);
   });
@@ -459,7 +465,7 @@ window.addEventListener('popstate',()=>{ if(!location.hash.startsWith('#v-')&&cu
 function renderHead(){
   const v=vehicleById(curVeh);
   $('vTitle').textContent=(CATNAME[v.type]||'Jármű')+(fleetNo(v)?' #'+fleetNo(v):'');
-  const p=$('vPlate'); p.innerHTML=''; p.appendChild(plateEl(v.plate,true));
+  const p=$('vPlate'); p.innerHTML=''; p.appendChild(plateEl(v.plate,true,v.id));
   const f=$('vFacts'); f.innerHTML='';
   [['Kategória',CATNAME[v.type]||'Egyéb'],['Típus',v.model],['Pályaszám',fleetNo(v)],['Azonosító',v.id],['Először látva',v.firstSeen?full(v.firstSeen):''],['Utoljára látva',v.live?'most':(v.lastSeen?full(v.lastSeen):'')],['Utolsó járat',v.lastRoute],['Megjegyzés',v.megjegyzes]]
     .forEach(([k,val])=>{ if(!val) return; f.append(el('span','',k),el('span','',val)); });
@@ -555,7 +561,7 @@ async function photoUrl(id){ if(photoCache[id]) return photoCache[id]; const j=a
 function noteEl(n,withVeh){
   const d=el('div','note'); const h=el('div','nh');
   const tag=el('span','tag k-'+n.kind,KINDNAME[n.kind]||n.kind); h.append(tag);
-  if(withVeh&&(n.plate||n.veh)){ const pv=el('button','',''); pv.type='button'; pv.style.cssText='background:none;border:0;padding:0;cursor:pointer'; pv.append(plateEl(n.plate)); pv.onclick=()=>openVehicle(n.veh); h.append(pv); }
+  if(withVeh&&(n.plate||n.veh)){ const pv=el('button','',''); pv.type='button'; pv.style.cssText='background:none;border:0;padding:0;cursor:pointer'; pv.append(plateEl(n.plate,false,n.veh)); pv.onclick=()=>openVehicle(n.veh); h.append(pv); }
   h.append(el('span','',full(n.ts)),el('span','',(n.by||'')+(n.byId?' ('+n.byId+')':'')));
   if(duty&&n.byId===duty.byId){ const del=el('button','del','Törlés'); del.type='button'; let armed=false; del.onclick=async()=>{ if(!armed){ armed=true; del.textContent='Biztosan törlöd? Koppints újra'; setTimeout(()=>{armed=false;del.textContent='Törlés';},4000); return; } del.disabled=true; try{ await post({op:'note_del',id:n.id}); d.remove(); toast('Törölve'); }catch(e){ toast('Nem sikerült: '+e.message); del.disabled=false; } }; h.append(del); }
   d.append(h); if(n.text) d.append(el('div','tx',n.text));
