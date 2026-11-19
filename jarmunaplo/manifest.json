@@ -6,8 +6,8 @@
  "id": "./",
  "display": "standalone",
  "orientation": "portrait",
- "background_color": "#16232f",
- "theme_color": "#16232f",
+ "background_color": "#4a148c",
+ "theme_color": "#4a148c",
  "lang": "hu",
  "icons": [
   {
