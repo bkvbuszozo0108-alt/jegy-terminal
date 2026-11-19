@@ -358,7 +358,7 @@ function merged(){
 }
 function shortId(id){ return String(id||'').replace(/^[A-Z]+_/,''); }
 function plateEl(p,big,id){
-  if(p){ const s=el('span','plate'+(big?' big':'')); s.append(el('i','','H'),el('b','',formatPlate(p))); return s; }
+  if(p){ const s=el('span','idtag'+(big?' big':'')); s.append(el('i','','Rendszám'),el('b','',formatPlate(p))); return s; }
   const s=el('span','idtag'+(big?' big':'')); s.append(el('i','','Azonosító'),el('b','',shortId(id)||'—')); return s; }
 function formatPlate(p){ p=String(p).toUpperCase().replace(/[^A-Z0-9]/g,''); let m=p.match(/^([A-Z]{2})([A-Z]{2})(\d{3})$/); if(m) return m[1]+' '+m[2]+'-'+m[3]; m=p.match(/^([A-Z]{3})(\d{3})$/); if(m) return m[1]+'-'+m[2]; return p; }
 function catEl(t){ const s=el('span','cat',CATNAME[t]||'Egyéb'); s.style.background='var(--c-'+(CATNAME[t]?t:'egyeb')+')'; return s; }
