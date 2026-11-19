@@ -56,10 +56,23 @@ class MainActivity : Activity() {
         s.mediaPlaybackRequiresUserGesture = false
         s.cacheMode = WebSettings.LOAD_DEFAULT
         s.userAgentString = s.userAgentString + " VizorApp/1.0"
+        android.webkit.CookieManager.getInstance().setAcceptCookie(true)
+        android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(web, true)
+        web.addJavascriptInterface(object {
+            @android.webkit.JavascriptInterface
+            fun copy(text: String) {
+                runOnUiThread {
+                    try {
+                        val cm = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                        cm.setPrimaryClip(android.content.ClipData.newPlainText("rendszám", text.take(20)))
+                    } catch (e: Exception) {}
+                }
+            }
+        }, "VizorNative")
         web.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val u = request.url.toString()
-                if (u.startsWith(url)) return false
+                if (u.startsWith("https://") || u.startsWith("http://")) return false // a lekérdezés (JSZP, bejelentkezés) is az appon belül nyílik
                 try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(u))) } catch (e: Exception) {}
                 return true
             }
@@ -68,6 +81,7 @@ class MainActivity : Activity() {
             }
             override fun onPageFinished(view: WebView, u: String) {
                 if (!failed) offline.visibility = View.GONE
+                if (u.startsWith(url)) pending?.let { pending = null; web.postDelayed({ inject(it) }, 400) }
             }
         }
 
@@ -107,6 +121,9 @@ class MainActivity : Activity() {
     private fun inject(code: String) {
         val js = "(function(c){if(typeof window.jegyScan==='function'){window.jegyScan(c);return 1}return 0})(" + JSONObject.quote(code) + ")"
         runOnUiThread {
+            // ha épp a lekérdezés oldala van nyitva, új beolvasásnál vissza a leolvasóhoz
+            val cur = web.url ?: ""
+            if (!cur.startsWith(url)) { pending = code; load(); return@runOnUiThread }
             try { web.evaluateJavascript(js) { r -> if (r != "1") pending = code } } catch (e: Exception) { pending = code }
         }
     }
