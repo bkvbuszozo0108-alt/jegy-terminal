@@ -194,6 +194,7 @@ pre.diag{font:12px/1.4 var(--mono);white-space:pre-wrap;overflow-wrap:anywhere;b
   <section id="t-beallitas" hidden>
     <div class="card form">
       <label class="field">BKK API-kulcs<input id="sBkk" autocomplete="off" spellcheck="false"></label>
+      <button type="button" class="btn" id="sPaste">Kulcs beillesztése a vágólapról</button>
       <div class="msg">Ennyi elég: a járművek közvetlenül a BKK-tól jönnek, a jegyzetek és fotók ezen a készüléken maradnak.</div>
       <details><summary class="msg" style="cursor:pointer">Közös szerver (nem kötelező)</summary>
         <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
@@ -209,7 +210,7 @@ pre.diag{font:12px/1.4 var(--mono);white-space:pre-wrap;overflow-wrap:anywhere;b
     </div>
     <div class="card form" style="margin-top:12px">
       <div class="sec" style="margin:0">Telepítés</div>
-      <div class="msg">Chrome ⋮ menü → „Alkalmazás telepítése” vagy „Hozzáadás a kezdőképernyőhöz”.</div>
+      <div class="msg">Android-app (Zebrára is): <a href="../apk/jarmunaplo.apk">Járműnapló letöltése (APK)</a>. Vagy Chrome ⋮ menü → „Alkalmazás telepítése”.</div>
       <button type="button" class="btn" id="install" hidden>Telepítés ezen az eszközön</button>
     </div>
   </section>
@@ -585,6 +586,14 @@ $('sTest').onclick=async()=>{
     if(okBkk){ refreshCatalog(); refreshLive(); loadShifts(); }
   }catch(e){ $('sMsg').className='msg err'; $('sMsg').textContent='Hiba: '+e.message; }
 };
+$('sPaste').onclick=async()=>{ let t='';
+  try{ if(window.JarmuNative&&JarmuNative.paste) t=JarmuNative.paste(); else if(navigator.clipboard&&navigator.clipboard.readText) t=await navigator.clipboard.readText(); }catch(e){}
+  const m=String(t||'').match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+  if(m){ $('sBkk').value=m[0]; cfg.bkk=m[0]; store.set('jn_cfg',cfg); $('sMsg').className='msg'; $('sMsg').textContent='Kulcs beillesztve és mentve.'; refreshLive(); }
+  else { $('sMsg').className='msg err'; $('sMsg').textContent='A vágólapon nincs BKK-kulcs. Másold ki a kulcsot (hosszan nyomva → Másolás), és próbáld újra.'; } };
+/* Zebra szkenner (Android app): a beolvasott kód keresésként fut */
+window.jegyScan=function(code){ closeVehicle(); showTab('jarmuvek'); const c=String(code||'').trim(); const m=c.toUpperCase().match(/[A-Z]{2}\s?[A-Z]{2}[\s-]?\d{3}|[A-Z]{3}[\s-]?\d{3}/);
+  $('q').value=m?m[0]:c; limit=150; renderList(); const rows=$('vlist').querySelectorAll('.row'); if(rows.length===1) rows[0].click(); };
 let installEvt=null; addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); installEvt=e; $('install').hidden=false; });
 $('install').onclick=()=>{ if(installEvt){ installEvt.prompt(); installEvt=null; $('install').hidden=true; } };
 
