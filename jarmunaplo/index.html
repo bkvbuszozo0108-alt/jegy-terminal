@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Járműnapló</title>
+<meta name="theme-color" content="#16232f">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+/* Layout: one-column field app. Steel-blue top bar with duty state, tabs, then lists; vehicle detail slides over as its own screen.
+   Plates are drawn like Hungarian number plates (white, blue EU strip). Semantic colours mark live / incident states. */
+:root{
+  --bg:#eef1f4; --surface:#ffffff; --ink:#14202b; --muted:#5a6875; --line:#d6dce2;
+  --brand:#16232f; --brand2:#22374a; --accent:#f2b705; --ink-on-brand:#eef3f7;
+  --ok:#2e7d32; --bad:#c62828; --warn:#d97706; --info:#1e6fd9;
+  --c-busz:#1e6fd9; --c-troli:#d42e3c; --c-villamos:#e0a800; --c-hev:#2e9e4f; --c-metro:#6b3fa0; --c-hajo:#0e7490; --c-egyeb:#6b7280;
+  --display:"Barlow Semi Condensed",system-ui,sans-serif; --body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){ :root{
+  --bg:#0d141b; --surface:#16202a; --ink:#e5ecf2; --muted:#93a2af; --line:#26333f;
+  --brand:#0a1118; --brand2:#18293a; color-scheme:dark } }
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 var(--body)}
+button,input,textarea,select{font:inherit;color:inherit}
+.wrap{max-width:720px;margin:0 auto;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+
+header.top{background:var(--brand);color:var(--ink-on-brand);position:sticky;top:0;z-index:20;padding-top:env(safe-area-inset-top,0px)}
+.top .wrap{display:flex;align-items:center;gap:12px;padding-block:10px}
+.logo{width:34px;height:34px;border-radius:8px;background:var(--accent);display:grid;place-items:center;color:#14202b;font:700 18px var(--display);flex:0 0 auto}
+.top h1{margin:0;font:700 1.35rem/1 var(--display);letter-spacing:.02em;flex:1;min-width:0}
+.duty{font-size:.78rem;font-weight:600;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.1);white-space:nowrap;border:0;color:inherit;cursor:pointer}
+.duty.on{background:var(--ok);color:#fff}
+nav.tabs{background:var(--brand2)}
+nav.tabs .wrap{display:flex;gap:4px}
+nav.tabs button{flex:1;background:none;border:0;color:#b8c6d3;padding:11px 6px;font:600 .95rem var(--display);letter-spacing:.06em;text-transform:uppercase;cursor:pointer;border-bottom:3px solid transparent}
+nav.tabs button.on{color:#fff;border-bottom-color:var(--accent)}
+main{padding-block:12px 40px}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.livebar{display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--muted);margin-bottom:8px;flex-wrap:wrap}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block}
+.dot.live{background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 25%,transparent)}
+.dot.err{background:var(--bad)}
+.search{display:flex;gap:8px}
+.search input{flex:1;min-width:0;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font-size:1.05rem}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:10px 0 4px;scrollbar-width:none}
+.chip{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:.85rem;font-weight:600;cursor:pointer;display:flex;gap:6px;align-items:center}
+.chip .n{color:var(--muted);font-weight:500;font-variant-numeric:tabular-nums}
+.chip.on{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.chip.on .n{color:inherit;opacity:.7}
+.toggle{display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--muted);margin:6px 0 10px}
+
+.list{display:flex;flex-direction:column}
+.row{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:11px 12px;border-bottom:1px solid var(--line);background:var(--surface);cursor:pointer;text-align:left;border-left:0;border-right:0;border-top:0;width:100%}
+.list .row:first-child{border-radius:10px 10px 0 0}.list .row:last-child{border-radius:0 0 10px 10px;border-bottom:0}
+.list{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.row .mid{min-width:0}
+.row .t1{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .t2{font-size:.82rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.more{width:100%;margin-top:10px;padding:12px;border:1px dashed var(--line);border-radius:10px;background:none;cursor:pointer;color:var(--muted)}
+.empty{padding:28px 16px;text-align:center;color:var(--muted)}
+
+.plate{display:inline-flex;align-items:stretch;border:2px solid #111;border-radius:5px;background:#fff;color:#111;font:700 .95rem/1 var(--mono);letter-spacing:.04em;overflow:hidden;white-space:nowrap}
+.plate i{background:#1d4ea3;color:#fff;font:700 .6rem/1 var(--body);font-style:normal;display:flex;align-items:flex-end;justify-content:center;padding:0 4px 3px;min-width:16px}
+.plate b{padding:5px 7px;font-weight:700}
+.plate.big{font-size:1.6rem;border-width:3px;border-radius:7px}.plate.big i{font-size:.8rem;min-width:24px;padding-bottom:5px}.plate.big b{padding:8px 12px}
+.plate.none b{color:#777;font-weight:500}
+.cat{font:600 .7rem/1 var(--display);letter-spacing:.08em;text-transform:uppercase;color:#fff;border-radius:4px;padding:4px 6px;display:inline-block}
+.route{font:700 .95rem/1 var(--display);border-radius:5px;padding:5px 8px;min-width:38px;text-align:center;display:inline-block;color:#fff;background:var(--c-busz)}
+.livechip{font-size:.72rem;font-weight:700;color:var(--ok);display:flex;align-items:center;gap:5px;white-space:nowrap}
+
+/* detail */
+.screen{position:fixed;inset:0;z-index:40;background:var(--bg);overflow:auto;-webkit-overflow-scrolling:touch}
+.screen header{background:var(--brand);color:var(--ink-on-brand);position:sticky;top:0;z-index:5;padding-top:env(safe-area-inset-top,0px)}
+.screen header .wrap{display:flex;align-items:center;gap:10px;padding-block:10px}
+.back{background:rgba(255,255,255,.12);border:0;color:inherit;border-radius:8px;width:40px;height:40px;font-size:1.2rem;cursor:pointer}
+.screen h2{margin:0;font:700 1.2rem var(--display);letter-spacing:.03em;flex:1}
+.hero{display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px;padding:16px}
+.hero .facts{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:.88rem;min-width:0;flex:1 1 220px}
+.hero .facts span:nth-child(odd){color:var(--muted)}
+.hero .facts span:nth-child(even){font-weight:600;overflow-wrap:anywhere}
+.sec{font:700 .8rem var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:18px 2px 8px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.sec small{font:500 .75rem var(--body);letter-spacing:0;text-transform:none}
+.livebox{padding:14px}
+.livehead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.livehead .hs{font-weight:700;font-size:1.05rem;min-width:0}
+.offline{padding:16px;color:var(--muted)}
+#map{height:280px;border-radius:8px;margin-top:12px;border:1px solid var(--line);z-index:1}
+.stops{margin-top:12px;max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+.stop{display:grid;grid-template-columns:18px 1fr auto;gap:10px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line);font-size:.9rem}
+.stop:last-child{border-bottom:0}
+.stop .tick{width:12px;height:12px;border-radius:50%;border:2px solid var(--muted);justify-self:center}
+.stop.past{color:var(--muted)}.stop.past .tick{background:var(--muted)}
+.stop.now{background:color-mix(in srgb,var(--accent) 18%,transparent);font-weight:700}.stop.now .tick{border-color:var(--accent);background:var(--accent)}
+.stop .tm{font:500 .85rem var(--mono);text-align:right;white-space:nowrap}
+.late{color:var(--bad)}.early{color:var(--warn)}.ontime{color:var(--ok)}
+.field{display:flex;flex-direction:column;gap:4px;font-size:.8rem;color:var(--muted)}
+.field input,.field textarea,.field select{padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-size:1rem;color:var(--ink)}
+.btn{border:0;border-radius:9px;padding:12px 16px;font-weight:600;cursor:pointer;background:var(--line);color:var(--ink)}
+.btn.pri{background:var(--brand2);color:#fff}
+.btn.ok{background:var(--ok);color:#fff}.btn.bad{background:var(--bad);color:#fff}
+.btn:disabled{opacity:.5;cursor:default}
+.btn:focus-visible,.chip:focus-visible,.row:focus-visible,nav.tabs button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.form{display:flex;flex-direction:column;gap:10px;padding:14px}
+.kinds{display:flex;flex-wrap:wrap;gap:6px}
+.kind{border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:.85rem;font-weight:600;cursor:pointer}
+.kind.on{border-color:currentColor}
+.k-jegyzet{color:var(--info)}.k-baleset{color:var(--bad)}.k-serules{color:var(--warn)}.k-hiba{color:#a16207}.k-takaritas{color:var(--ok)}.k-egyeb{color:var(--muted)}
+.thumbs{display:flex;flex-wrap:wrap;gap:8px}
+.thumbs img,.thumbs .ph{width:76px;height:76px;object-fit:cover;border-radius:8px;border:1px solid var(--line);background:var(--bg);cursor:pointer}
+.thumbs .ph{display:grid;place-items:center;font-size:.7rem;color:var(--muted)}
+.note{padding:12px 14px;border-bottom:1px solid var(--line)}
+.note:last-child{border-bottom:0}
+.note .nh{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:.8rem;color:var(--muted)}
+.note .tag{font:700 .7rem var(--display);letter-spacing:.08em;text-transform:uppercase;padding:3px 7px;border-radius:4px;border:1.5px solid currentColor}
+.note .tx{margin:6px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.note .del{margin-left:auto;background:none;border:0;color:var(--muted);cursor:pointer;font-size:.8rem;text-decoration:underline}
+.banner{padding:12px 14px;border-radius:10px;background:color-mix(in srgb,var(--warn) 14%,var(--surface));border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);font-size:.9rem;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.msg{font-size:.85rem;color:var(--muted)}
+.msg.err{color:var(--bad)}
+pre.diag{font:12px/1.4 var(--mono);white-space:pre-wrap;overflow-wrap:anywhere;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;max-height:260px;overflow:auto;margin:0}
+.lightbox{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.92);display:grid;place-items:center;padding:16px}
+.lightbox img{max-width:100%;max-height:100%;border-radius:6px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:999px;font-size:.9rem;z-index:90;max-width:90vw;text-align:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:420px){.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="logo" aria-hidden="true">J</div>
+    <h1>Járműnapló</h1>
+    <button type="button" class="duty" id="dutyChip">Nincs szolgálatban</button>
+  </div>
+</header>
+<nav class="tabs"><div class="wrap">
+  <button type="button" data-tab="jarmuvek" class="on">Járművek</button>
+  <button type="button" data-tab="szolgalat">Szolgálat</button>
+  <button type="button" data-tab="beallitas">Beállítások</button>
+</div></nav>
+
+<main class="wrap">
+  <!-- JÁRMŰVEK -->
+  <section id="t-jarmuvek">
+    <div class="livebar"><span class="dot" id="liveDot"></span><span id="liveTxt">Kapcsolódás…</span></div>
+    <div class="search">
+      <input id="q" placeholder="Rendszám, járat vagy azonosító" autocomplete="off" autocapitalize="characters" enterkeyhint="search">
+    </div>
+    <div class="chips" id="cats"></div>
+    <label class="toggle"><input type="checkbox" id="onlyLive"> Csak a most forgalomban lévők</label>
+    <div class="list" id="vlist"></div>
+    <button type="button" class="more" id="more" hidden>Továbbiak</button>
+    <div class="empty" id="vempty" hidden></div>
+  </section>
+
+  <!-- SZOLGÁLAT -->
+  <section id="t-szolgalat" hidden>
+    <div class="card form" id="dutyOff">
+      <div class="sec" style="margin:0">Szolgálat kezdése</div>
+      <div class="grid2">
+        <label class="field">Név<input id="dName" autocomplete="name"></label>
+        <label class="field">Szolgálati azonosító<input id="dId" autocapitalize="characters"></label>
+      </div>
+      <label class="field">Megjegyzés (pl. forgalmi szám, vonal)<input id="dNote"></label>
+      <button type="button" class="btn ok" id="dStart">Szolgálatba lépés</button>
+      <div class="msg" id="dMsg"></div>
+    </div>
+    <div class="card form" id="dutyOn" hidden>
+      <div class="sec" style="margin:0">Szolgálatban</div>
+      <div id="dutyInfo"></div>
+      <button type="button" class="btn bad" id="dEnd">Szolgálat befejezése</button>
+      <div class="msg" id="dMsg2"></div>
+    </div>
+    <div class="sec">Szolgálatok <small id="shRefresh"></small></div>
+    <div class="card" id="shifts"><div class="empty">Betöltés…</div></div>
+    <div class="sec">Legutóbbi bejegyzések</div>
+    <div class="card" id="recent"><div class="empty">Betöltés…</div></div>
+  </section>
+
+  <!-- BEÁLLÍTÁSOK -->
+  <section id="t-beallitas" hidden>
+    <div class="card form">
+      <label class="field">Szerver címe (Apps Script …/exec)<input id="sUrl" inputmode="url" autocomplete="off" placeholder="https://script.google.com/macros/s/…/exec"></label>
+      <label class="field">Kulcs<input id="sKey" autocomplete="off"></label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="btn pri" id="sSave">Mentés</button>
+        <button type="button" class="btn" id="sTest">Kapcsolat tesztelése</button>
+      </div>
+      <div class="msg" id="sMsg"></div>
+      <pre class="diag" id="sDiag" hidden></pre>
+    </div>
+    <div class="card form" style="margin-top:12px">
+      <div class="sec" style="margin:0">Telepítés</div>
+      <div class="msg">Chrome ⋮ menü → „Alkalmazás telepítése” vagy „Hozzáadás a kezdőképernyőhöz”.</div>
+      <button type="button" class="btn" id="install" hidden>Telepítés ezen az eszközön</button>
+    </div>
+  </section>
+</main>
+
+<!-- JÁRMŰ RÉSZLETEK -->
+<div class="screen" id="detail" hidden>
+  <header><div class="wrap">
+    <button type="button" class="back" id="dBack" aria-label="Vissza">←</button>
+    <h2 id="vTitle">Jármű</h2>
+  </div></header>
+  <div class="wrap" style="padding-block:12px 60px">
+    <div class="card hero">
+      <span id="vPlate"></span>
+      <div class="facts" id="vFacts"></div>
+    </div>
+
+    <div class="sec">Forgalomban <small id="vAge"></small></div>
+    <div class="card" id="vLive"></div>
+
+    <div class="sec">Jegyzetkönyv <small id="vCount"></small></div>
+    <div id="noteGate"></div>
+    <div class="card form" id="noteForm" hidden>
+      <div class="kinds" id="kinds"></div>
+      <label class="field">Leírás<textarea id="nText" rows="3" placeholder="Mi történt? Hol? Ki volt érintett?"></textarea></label>
+      <div class="thumbs" id="nThumbs"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <label class="btn" for="nFiles" style="display:inline-flex;align-items:center">📷 Fotó hozzáadása</label>
+        <input type="file" id="nFiles" accept="image/*" capture="environment" multiple hidden>
+        <button type="button" class="btn pri" id="nSave">Mentés</button>
+      </div>
+      <div class="msg" id="nMsg"></div>
+    </div>
+    <div class="card" id="notes" style="margin-top:10px"><div class="empty">Betöltés…</div></div>
+  </div>
+</div>
+
+<div class="lightbox" id="lb" hidden><img id="lbImg" alt=""></div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const pad=n=>String(n).padStart(2,'0');
+const hm=ms=>{ const d=new Date(ms); return pad(d.getHours())+':'+pad(d.getMinutes()); };
+const full=ms=>{ const d=new Date(ms); return d.getFullYear()+'.'+pad(d.getMonth()+1)+'.'+pad(d.getDate())+'. '+hm(ms); };
+const ago=ms=>{ const s=Math.round((Date.now()-ms)/1000); if(s<60) return s+' mp'; if(s<3600) return Math.round(s/60)+' perce'; if(s<86400) return Math.round(s/3600)+' órája'; return Math.round(s/86400)+' napja'; };
+const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+function toast(t){ const el=$('toast'); el.textContent=t; el.hidden=false; clearTimeout(toast.t); toast.t=setTimeout(()=>el.hidden=true,2600); }
+function el(tag,cls,txt){ const e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) e.textContent=txt; return e; }
+
+const CATS=[['mind','Mind'],['busz','Busz'],['troli','Troli'],['villamos','Villamos'],['hev','HÉV'],['metro','Metró'],['hajo','Hajó'],['egyeb','Egyéb']];
+const CATNAME=Object.fromEntries(CATS);
+const KINDS=[['jegyzet','Jegyzet'],['baleset','Baleset'],['serules','Sérülés'],['hiba','Műszaki hiba'],['takaritas','Takarítás'],['egyeb','Egyéb']];
+const KINDNAME=Object.fromEntries(KINDS);
+
+/* ---------- beállítások / szerver ---------- */
+const cfg=Object.assign({url:'',key:''},store.get('jn_cfg',{}));
+(function hashSetup(){ const h=location.hash.slice(1); if(!h) return; const p=new URLSearchParams(h); if(p.get('u')){ cfg.url=p.get('u'); cfg.key=p.get('k')||cfg.key; store.set('jn_cfg',cfg); history.replaceState(null,'',location.pathname); } })();
+async function api(op,params={}){
+  if(!cfg.url) throw new Error('Nincs beállítva a szerver címe (Beállítások).');
+  const q=new URLSearchParams(Object.assign({op,key:cfg.key},params));
+  const r=await fetch(cfg.url+(cfg.url.includes('?')?'&':'?')+q.toString(),{redirect:'follow'});
+  const j=await r.json(); if(j&&j.error) throw new Error(j.error); return j;
+}
+async function post(body){
+  if(!cfg.url) throw new Error('Nincs beállítva a szerver címe (Beállítások).');
+  const r=await fetch(cfg.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({key:cfg.key},body)),redirect:'follow'});
+  const j=await r.json(); if(j&&j.error) throw new Error(j.error); return j;
+}
+
+/* ---------- adatok ---------- */
+let catalog=store.get('jn_catalog',[]);   // [{id,plate,label,model,type,firstSeen,lastSeen,lastRoute,palyaszam,megjegyzes}]
+let live={ts:0,list:[]}, liveById={}, liveErr='';
+let cat='mind', limit=150;
+function merged(){
+  const by={};
+  catalog.forEach(c=>{ by[c.id]=Object.assign({},c); });
+  live.list.forEach(v=>{ const c=by[v.id]||{id:v.id,firstSeen:live.ts}; by[v.id]=Object.assign(c,{plate:v.plate||c.plate,label:v.label||c.label,model:v.model||c.model,type:v.type||c.type,lastSeen:live.ts,lastRoute:v.route||c.lastRoute,live:v}); });
+  return Object.values(by);
+}
+function plateEl(p,big){ const s=el('span','plate'+(big?' big':'')+(p?'':' none')); s.append(el('i','', 'H'), el('b','', p?formatPlate(p):'nincs rendszám')); return s; }
+function formatPlate(p){ p=String(p).toUpperCase().replace(/[^A-Z0-9]/g,''); let m=p.match(/^([A-Z]{2})([A-Z]{2})(\d{3})$/); if(m) return m[1]+' '+m[2]+'-'+m[3]; m=p.match(/^([A-Z]{3})(\d{3})$/); if(m) return m[1]+'-'+m[2]; return p; }
+function catEl(t){ const s=el('span','cat',CATNAME[t]||'Egyéb'); s.style.background='var(--c-'+(CATNAME[t]?t:'egyeb')+')'; return s; }
+function routeEl(v){ const s=el('span','route',v.route||'?'); if(v.color) s.style.background='#'+v.color.replace('#',''); else s.style.background='var(--c-'+(v.type||'busz')+')'; if(v.textColor) s.style.color='#'+v.textColor.replace('#',''); return s; }
+function fleetNo(x){ if(x.palyaszam) return String(x.palyaszam); const m=String(x.label||'').match(/\d{3,5}/)||String(x.id||'').match(/(\d{3,5})$/); return m?m[0]:''; }
+
+function renderCats(all){
+  const counts={mind:all.length}; all.forEach(v=>{ counts[v.type]=(counts[v.type]||0)+1; });
+  const box=$('cats'); box.innerHTML='';
+  CATS.forEach(([k,n])=>{ if(k!=='mind'&&!counts[k]) return; const b=el('button','chip'+(cat===k?' on':'')); b.type='button'; b.append(el('span','',n),el('span','n',String(counts[k]||0))); b.onclick=()=>{cat=k;limit=150;renderList();}; box.appendChild(b); });
+}
+function renderList(){
+  const all=merged(); renderCats(all);
+  const q=$('q').value.trim().toUpperCase().replace(/\s+/g,''); const qn=q.replace(/[^A-Z0-9]/g,'');
+  const onlyLive=$('onlyLive').checked;
+  let rows=all.filter(v=>(cat==='mind'||v.type===cat)&&(!onlyLive||v.live));
+  if(q) rows=rows.filter(v=>{ const pl=String(v.plate||'').toUpperCase().replace(/[^A-Z0-9]/g,''); const r=String(v.live?v.live.route:v.lastRoute||'').toUpperCase();
+    return (qn&&pl.includes(qn))||r===q||String(v.id).toUpperCase().includes(q)||fleetNo(v)===q||String(v.model||'').toUpperCase().includes(q); });
+  rows.sort((a,b)=>(!!b.live-!!a.live)||String(a.plate||'~').localeCompare(String(b.plate||'~')));
+  const box=$('vlist'); box.innerHTML='';
+  rows.slice(0,limit).forEach(v=>{
+    const r=el('button','row'); r.type='button';
+    const mid=el('div','mid');
+    const t1=el('div','t1'); t1.textContent=[fleetNo(v)?('#'+fleetNo(v)):'',v.model||CATNAME[v.type]||''].filter(Boolean).join(' · ')||v.id;
+    const t2=el('div','t2'); t2.textContent=v.live?('→ '+(v.live.headsign||'')):(v.lastSeen?('Utoljára: '+full(v.lastSeen)+(v.lastRoute?' · '+v.lastRoute:'')):'Még nem látta forgalomban');
+    mid.append(t1,t2);
+    const right=el('div',''); right.style.cssText='display:flex;flex-direction:column;align-items:flex-end;gap:4px';
+    if(v.live){ right.append(routeEl(v.live)); const lc=el('span','livechip'); lc.append(el('span','dot live'),'élő'); right.append(lc); } else right.append(catEl(v.type));
+    r.append(plateEl(v.plate),mid,right);
+    r.onclick=()=>openVehicle(v.id);
+    box.appendChild(r);
+  });
+  $('more').hidden=rows.length<=limit;
+  $('vempty').hidden=rows.length>0; box.hidden=rows.length===0;
+  $('vempty').textContent=!cfg.url?'Állítsd be a szervert a Beállítások fülön.':(all.length?'Nincs találat.':'Még nincs jármű a listában. Az első lekérdezés után megjelennek a forgalomban lévők.');
+}
+$('more').onclick=()=>{ limit+=200; renderList(); };
+$('q').addEventListener('input',()=>{ limit=150; renderList(); });
+$('q').addEventListener('keydown',e=>{ if(e.key==='Enter'){ const first=$('vlist').querySelector('.row'); const n=$('vlist').querySelectorAll('.row').length; if(n===1&&first) first.click(); e.preventDefault(); } });
+$('onlyLive').onchange=()=>{ limit=150; renderList(); };
+
+async function refreshLive(){
+  if(!cfg.url){ setLive('err','Nincs beállítva szerver'); renderList(); return; }
+  try{ live=await api('live'); liveById={}; (live.list||[]).forEach(v=>liveById[v.id]=v); liveErr='';
+    setLive('live','Élő · '+live.list.length+' jármű forgalomban · '+hm(live.ts));
+  }catch(e){ liveErr=e.message; setLive('err','Élő adat nem érhető el: '+e.message); }
+  renderList(); if(curVeh) renderLive();
+}
+function setLive(s,t){ $('liveDot').className='dot'+(s==='live'?' live':s==='err'?' err':''); $('liveTxt').textContent=t; }
+async function refreshCatalog(){ if(!cfg.url) return; try{ const j=await api('catalog'); catalog=j.list||[]; store.set('jn_catalog',catalog); renderList(); }catch(e){} }
+
+/* ---------- szolgálat ---------- */
+let duty=store.get('jn_duty',null);   // {id,start,by,byId,note}
+const me=store.get('jn_me',{name:'',id:''});
+$('dName').value=me.name; $('dId').value=me.id;
+function renderDuty(){
+  const c=$('dutyChip'); c.classList.toggle('on',!!duty); c.textContent=duty?('Szolgálatban · '+hm(duty.start)+' óta'):'Nincs szolgálatban';
+  $('dutyOff').hidden=!!duty; $('dutyOn').hidden=!duty;
+  if(duty){ const i=$('dutyInfo'); i.innerHTML=''; [['Név',duty.by],['Azonosító',duty.byId],['Kezdés',full(duty.start)],['Megjegyzés',duty.note]].forEach(([k,v])=>{ if(!v) return; const d=el('div','msg'); d.append(el('span','',k+': '),el('b','',v)); i.appendChild(d); }); }
+  renderGate();
+}
+$('dutyChip').onclick=()=>showTab('szolgalat');
+$('dStart').onclick=async()=>{
+  const name=$('dName').value.trim(), id=$('dId').value.trim();
+  if(!name||!id){ $('dMsg').textContent='Add meg a neved és a szolgálati azonosítód.'; $('dMsg').className='msg err'; return; }
+  store.set('jn_me',{name,id}); me.name=name; me.id=id;
+  $('dStart').disabled=true; $('dMsg').className='msg'; $('dMsg').textContent='Mentés…';
+  try{ const r=await post({op:'shift_start',by:name,byId:id,note:$('dNote').value.trim(),device:navigator.userAgent.slice(0,80)});
+    duty={id:r.id,start:r.start,by:name,byId:id,note:$('dNote').value.trim()}; store.set('jn_duty',duty); $('dMsg').textContent=''; toast('Szolgálatba léptél'); loadShifts();
+  }catch(e){ $('dMsg').className='msg err'; $('dMsg').textContent='Nem sikerült: '+e.message; }
+  $('dStart').disabled=false; renderDuty();
+};
+$('dEnd').onclick=async()=>{
+  $('dEnd').disabled=true; $('dMsg2').className='msg'; $('dMsg2').textContent='Mentés…';
+  try{ await post({op:'shift_end',id:duty.id}); duty=null; store.set('jn_duty',null); $('dMsg2').textContent=''; toast('Szolgálat befejezve'); loadShifts(); }
+  catch(e){ $('dMsg2').className='msg err'; $('dMsg2').textContent='Nem sikerült: '+e.message; }
+  $('dEnd').disabled=false; renderDuty();
+};
+async function loadShifts(){
+  const box=$('shifts');
+  try{ const j=await api('shifts'); box.innerHTML='';
+    if(!j.list.length){ box.append(el('div','empty','Még nincs szolgálat rögzítve.')); }
+    j.list.slice(0,30).forEach(s=>{ const n=el('div','note'); const h=el('div','nh'); h.append(el('b','',s.by||'?'),el('span','',s.byId||''),el('span','',full(s.start)+' – '+(s.end?hm(s.end):'folyamatban')));
+      n.append(h); if(s.note) n.append(el('div','tx',s.note)); box.appendChild(n); });
+  }catch(e){ box.innerHTML=''; box.append(el('div','empty',cfg.url?('Nem tölthető be: '+e.message):'Állítsd be a szervert a Beállítások fülön.')); }
+  try{ const j=await api('notes',{limit:30}); const box2=$('recent'); box2.innerHTML='';
+    if(!j.list.length) box2.append(el('div','empty','Még nincs bejegyzés.'));
+    j.list.forEach(n=>box2.appendChild(noteEl(n,true)));
+  }catch(e){ $('recent').innerHTML=''; $('recent').append(el('div','empty','—')); }
+}
+
+/* ---------- jármű részletek ---------- */
+let curVeh=null, curTrip=null, map=null, layer=null, vMarker=null;
+function vehicleById(id){ return merged().find(v=>v.id===id)||{id}; }
+function openVehicle(id){
+  curVeh=id; curTrip=null; $('detail').hidden=false; document.body.style.overflow='hidden';
+  location.hash='v-'+encodeURIComponent(id).replace(/%/g,'');
+  renderHead(); renderLive(true); loadNotes(); renderGate();
+  $('detail').scrollTop=0;
+}
+function closeVehicle(){ curVeh=null; $('detail').hidden=true; document.body.style.overflow=''; if(location.hash.startsWith('#v-')) history.replaceState(null,'',location.pathname); }
+$('dBack').onclick=closeVehicle;
+window.addEventListener('popstate',()=>{ if(!location.hash.startsWith('#v-')&&curVeh) closeVehicle(); });
+function renderHead(){
+  const v=vehicleById(curVeh);
+  $('vTitle').textContent=(CATNAME[v.type]||'Jármű')+(fleetNo(v)?' #'+fleetNo(v):'');
+  const p=$('vPlate'); p.innerHTML=''; p.appendChild(plateEl(v.plate,true));
+  const f=$('vFacts'); f.innerHTML='';
+  [['Kategória',CATNAME[v.type]||'Egyéb'],['Típus',v.model],['Pályaszám',fleetNo(v)],['Azonosító',v.id],['Először látva',v.firstSeen?full(v.firstSeen):''],['Utoljára látva',v.live?'most':(v.lastSeen?full(v.lastSeen):'')],['Utolsó járat',v.lastRoute],['Megjegyzés',v.megjegyzes]]
+    .forEach(([k,val])=>{ if(!val) return; f.append(el('span','',k),el('span','',val)); });
+  const eb=el('button','btn'); eb.type='button'; eb.textContent='Pályaszám szerkesztése'; eb.style.cssText='grid-column:1/-1;justify-self:start;padding:6px 10px;font-size:.8rem;margin-top:4px';
+  eb.onclick=()=>editFleet(v); f.appendChild(eb);
+}
+function editFleet(v){
+  const f=$('vFacts'); const w=el('div',''); w.style.cssText='grid-column:1/-1;display:flex;gap:6px;margin-top:6px';
+  const i=el('input',''); i.value=v.palyaszam||''; i.placeholder='pl. 1234'; i.style.cssText='flex:1;min-width:0;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--surface)';
+  const s=el('button','btn pri','Mentés'); s.type='button';
+  s.onclick=async()=>{ s.disabled=true; try{ await post({op:'veh_set',veh:v.id,plate:v.plate,type:v.type,palyaszam:i.value.trim()}); const c=catalog.find(x=>x.id===v.id); if(c) c.palyaszam=i.value.trim(); else catalog.push({id:v.id,plate:v.plate,type:v.type,palyaszam:i.value.trim()}); store.set('jn_catalog',catalog); toast('Mentve'); renderHead(); renderList(); }catch(e){ toast('Nem sikerült: '+e.message); s.disabled=false; } };
+  w.append(i,s); f.appendChild(w); i.focus();
+}
+async function renderLive(first){
+  const box=$('vLive'); const v=liveById[curVeh];
+  if(!v){ box.innerHTML=''; const d=el('div','offline'); d.textContent=liveErr?('Élő adat nem érhető el: '+liveErr):'A jármű most nincs forgalomban (vagy nem küld helyadatot).'; box.appendChild(d); $('vAge').textContent=''; destroyMap(); curTrip=null; return; }
+  $('vAge').textContent='frissítve '+ago((v.upd?v.upd*1000:live.ts))+(v.upd?'':'');
+  if(first||!curTrip||curTrip.tripId!==v.tripId){
+    box.innerHTML='';
+    const lb=el('div','livebox');
+    const h=el('div','livehead'); h.append(routeEl(v),el('span','hs','→ '+(v.headsign||'')));
+    lb.append(h);
+    const st=el('div','msg'); st.id='vStatus'; lb.append(st);
+    const m=el('div',''); m.id='map'; lb.append(m);
+    const sl=el('div','stops'); sl.id='vStops'; sl.append(el('div','empty','Menetrend betöltése…')); lb.append(sl);
+    box.appendChild(lb);
+    initMap(v);
+    try{ curTrip=await api('trip',{tripId:v.tripId,vehicleId:v.id}); }catch(e){ $('vStops').innerHTML=''; $('vStops').append(el('div','empty','Menetrend nem érhető el: '+e.message)); curTrip={tripId:v.tripId,stops:[],err:1}; }
+  }
+  updateLive(v);
+}
+function delayMin(s){ const sch=s.dep||s.arr, pr=s.pdep||s.parr; if(!sch||!pr) return null; return Math.round((pr-sch)/60); }
+function updateLive(v){
+  const st=$('vStatus'); if(st){ const sx={'IN_TRANSIT_TO':'Úton a következő megállóhoz','STOPPED_AT':'Megállóban áll','INCOMING_AT':'Megállóhoz érkezik'}[v.status]||''; st.textContent=[sx,v.deviated?'Eltér az útvonaltól':'',v.model].filter(Boolean).join(' · '); }
+  if(map&&v.lat!=null){ const ll=[v.lat,v.lon]; if(vMarker) vMarker.setLatLng(ll); else { vMarker=L.circleMarker(ll,{radius:9,color:'#fff',weight:3,fillColor:'#f2b705',fillOpacity:1}).addTo(map); } }
+  if(!curTrip||!curTrip.stops) return;
+  const box=$('vStops'); if(!box) return; box.innerHTML='';
+  const idx=curTrip.stops.findIndex(s=>s.id===v.stopId);
+  let lastDelay=null;
+  curTrip.stops.forEach((s,i)=>{
+    const r=el('div','stop'+(idx>=0&&i<idx?' past':'')+(i===idx?' now':''));
+    r.append(el('span','tick'),el('span','',s.name));
+    const t=el('span','tm'); const sch=s.dep||s.arr; const d=delayMin(s); if(d!=null) lastDelay=d;
+    t.textContent=sch?hm(sch*1000):'';
+    if(d!=null&&i>=idx){ const dd=el('span',d>=2?'late':d<=-1?'early':'ontime',' '+(d>0?'+':'')+d); t.append(dd); }
+    r.append(t); box.appendChild(r);
+  });
+  if(idx>=0){ const n=box.children[idx]; if(n) box.scrollTop=Math.max(0,n.offsetTop-box.offsetTop-60); }
+  if(map&&curTrip.polyline&&!layer){ try{ const pts=decodePoly(curTrip.polyline); layer=L.polyline(pts,{color:'#'+(curTrip.color||v.color||'1e6fd9').replace('#',''),weight:5,opacity:.85}).addTo(map); curTrip.stops.forEach(s=>{ if(s.lat!=null) L.circleMarker([s.lat,s.lon],{radius:4,color:'#fff',weight:2,fillColor:'#14202b',fillOpacity:1}).bindTooltip(s.name).addTo(map); }); map.fitBounds(layer.getBounds(),{padding:[20,20]}); if(vMarker) vMarker.bringToFront(); }catch(e){} }
+  if(st&&lastDelay!=null){ const s2=el('b',lastDelay>=2?'late':lastDelay<=-1?'early':'ontime'); s2.textContent=' · '+(lastDelay>0?lastDelay+' perc késés':lastDelay<0?(-lastDelay)+' perc sietés':'menetrend szerint'); st.append(s2); }
+}
+function initMap(v){
+  destroyMap(); if(!window.L) { $('map').textContent='A térkép nem töltődött be.'; return; }
+  map=L.map('map',{zoomControl:true,attributionControl:true}).setView([v.lat||47.4979,v.lon||19.0402],14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+}
+function destroyMap(){ if(map){ map.remove(); map=null; } layer=null; vMarker=null; }
+function decodePoly(s){ let i=0,lat=0,lng=0,out=[]; while(i<s.length){ let b,sh=0,r=0; do{ b=s.charCodeAt(i++)-63; r|=(b&31)<<sh; sh+=5; }while(b>=32); lat+=(r&1)?~(r>>1):(r>>1); sh=0; r=0; do{ b=s.charCodeAt(i++)-63; r|=(b&31)<<sh; sh+=5; }while(b>=32); lng+=(r&1)?~(r>>1):(r>>1); out.push([lat/1e5,lng/1e5]); } return out; }
+
+/* ---------- jegyzetkönyv ---------- */
+let kind='jegyzet', pending=[];
+function renderKinds(){ const b=$('kinds'); b.innerHTML=''; KINDS.forEach(([k,n])=>{ const x=el('button','kind k-'+k+(kind===k?' on':''),n); x.type='button'; x.onclick=()=>{kind=k;renderKinds();}; b.appendChild(x); }); }
+function renderGate(){
+  const g=$('noteGate'); g.innerHTML='';
+  if(!duty){ const b=el('div','banner'); b.append(el('span','','Bejegyzést szolgálatban lehet írni.')); const go=el('button','btn ok','Szolgálatba lépés'); go.type='button'; go.onclick=()=>{ closeVehicle(); showTab('szolgalat'); }; b.append(go); g.appendChild(b); $('noteForm').hidden=true; }
+  else $('noteForm').hidden=false;
+}
+$('nFiles').onchange=async()=>{
+  const files=[...$('nFiles').files]; $('nFiles').value='';
+  for(const f of files){ if(pending.length>=8){ toast('Legfeljebb 8 fotó'); break; } try{ pending.push(await shrink(f)); }catch(e){ toast('Egy képet nem sikerült beolvasni'); } }
+  renderPending();
+};
+function renderPending(){ const t=$('nThumbs'); t.innerHTML=''; pending.forEach((p,i)=>{ const im=el('img'); im.src=p.url; im.title='Koppints az eltávolításhoz'; im.onclick=()=>{ pending.splice(i,1); renderPending(); }; t.appendChild(im); }); }
+function shrink(file){ return new Promise((res,rej)=>{ const u=URL.createObjectURL(file); const im=new Image(); im.onload=()=>{ const mx=1400, sc=Math.min(1,mx/Math.max(im.width,im.height)); const c=document.createElement('canvas'); c.width=Math.round(im.width*sc); c.height=Math.round(im.height*sc); c.getContext('2d').drawImage(im,0,0,c.width,c.height); URL.revokeObjectURL(u); const url=c.toDataURL('image/jpeg',.8); res({url,b64:url.split(',')[1],mime:'image/jpeg'}); }; im.onerror=rej; im.src=u; }); }
+$('nSave').onclick=async()=>{
+  const text=$('nText').value.trim(); if(!text&&!pending.length){ $('nMsg').className='msg err'; $('nMsg').textContent='Írj leírást vagy adj hozzá fotót.'; return; }
+  const v=vehicleById(curVeh);
+  $('nSave').disabled=true; $('nMsg').className='msg'; $('nMsg').textContent=pending.length?('Feltöltés ('+pending.length+' fotó)…'):'Mentés…';
+  try{ await post({op:'note',veh:v.id,plate:v.plate||'',kind,text,by:duty.by,byId:duty.byId,shift:duty.id,photos:pending.map(p=>({b64:p.b64,mime:p.mime}))});
+    $('nText').value=''; pending=[]; renderPending(); kind='jegyzet'; renderKinds(); $('nMsg').textContent=''; toast('Bejegyzés mentve'); loadNotes();
+  }catch(e){ $('nMsg').className='msg err'; $('nMsg').textContent='Nem sikerült menteni: '+e.message+' – a szöveg és a fotók megmaradtak, próbáld újra.'; }
+  $('nSave').disabled=false;
+};
+async function loadNotes(){
+  const box=$('notes'); box.innerHTML=''; box.append(el('div','empty','Betöltés…'));
+  try{ const j=await api('notes',{veh:curVeh}); box.innerHTML=''; $('vCount').textContent=j.list.length?j.list.length+' bejegyzés':'';
+    if(!j.list.length) box.append(el('div','empty','Még nincs bejegyzés ehhez a járműhöz.'));
+    j.list.forEach(n=>box.appendChild(noteEl(n,false)));
+  }catch(e){ box.innerHTML=''; box.append(el('div','empty',cfg.url?('Nem tölthető be: '+e.message):'Állítsd be a szervert a Beállítások fülön.')); }
+}
+const photoCache={};
+async function photoUrl(id){ if(photoCache[id]) return photoCache[id]; const j=await api('photo',{id}); const u='data:'+(j.mime||'image/jpeg')+';base64,'+j.b64; photoCache[id]=u; return u; }
+function noteEl(n,withVeh){
+  const d=el('div','note'); const h=el('div','nh');
+  const tag=el('span','tag k-'+n.kind,KINDNAME[n.kind]||n.kind); h.append(tag);
+  if(withVeh&&(n.plate||n.veh)){ const pv=el('button','',''); pv.type='button'; pv.style.cssText='background:none;border:0;padding:0;cursor:pointer'; pv.append(plateEl(n.plate)); pv.onclick=()=>openVehicle(n.veh); h.append(pv); }
+  h.append(el('span','',full(n.ts)),el('span','',(n.by||'')+(n.byId?' ('+n.byId+')':'')));
+  if(duty&&n.byId===duty.byId){ const del=el('button','del','Törlés'); del.type='button'; let armed=false; del.onclick=async()=>{ if(!armed){ armed=true; del.textContent='Biztosan törlöd? Koppints újra'; setTimeout(()=>{armed=false;del.textContent='Törlés';},4000); return; } del.disabled=true; try{ await post({op:'note_del',id:n.id}); d.remove(); toast('Törölve'); }catch(e){ toast('Nem sikerült: '+e.message); del.disabled=false; } }; h.append(del); }
+  d.append(h); if(n.text) d.append(el('div','tx',n.text));
+  if(n.photos&&n.photos.length){ const t=el('div','thumbs'); n.photos.forEach(pid=>{ const ph=el('div','ph','fotó'); t.appendChild(ph);
+      photoUrl(pid).then(u=>{ const im=el('img'); im.src=u; im.alt='Fotó'; im.onclick=()=>{ $('lbImg').src=u; $('lb').hidden=false; }; ph.replaceWith(im); }).catch(()=>{ ph.textContent='nem elérhető'; }); }); d.append(t); }
+  return d;
+}
+$('lb').onclick=()=>{ $('lb').hidden=true; $('lbImg').src=''; };
+
+/* ---------- beállítások ---------- */
+$('sUrl').value=cfg.url; $('sKey').value=cfg.key;
+$('sSave').onclick=()=>{ cfg.url=$('sUrl').value.trim(); cfg.key=$('sKey').value.trim(); store.set('jn_cfg',cfg); $('sMsg').className='msg'; $('sMsg').textContent='Mentve.'; refreshCatalog(); refreshLive(); loadShifts(); };
+$('sTest').onclick=async()=>{
+  cfg.url=$('sUrl').value.trim(); cfg.key=$('sKey').value.trim(); store.set('jn_cfg',cfg);
+  $('sMsg').className='msg'; $('sMsg').textContent='Tesztelés…'; $('sDiag').hidden=true;
+  try{ const j=await api('ping');
+    const okBkk=j.bkk==='ok';
+    $('sMsg').className='msg'+(okBkk?'':' err');
+    $('sMsg').textContent='Szerver: rendben. BKK: '+(okBkk?('rendben, '+j.vehicles+' jármű forgalomban.'):j.bkk);
+    $('sDiag').textContent=JSON.stringify(j.sample||j,null,1); $('sDiag').hidden=false;
+    if(okBkk){ refreshCatalog(); refreshLive(); loadShifts(); }
+  }catch(e){ $('sMsg').className='msg err'; $('sMsg').textContent='Hiba: '+e.message; }
+};
+let installEvt=null; addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); installEvt=e; $('install').hidden=false; });
+$('install').onclick=()=>{ if(installEvt){ installEvt.prompt(); installEvt=null; $('install').hidden=true; } };
+
+/* ---------- fülek ---------- */
+function showTab(t){ document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t)); ['jarmuvek','szolgalat','beallitas'].forEach(x=>$('t-'+x).hidden=x!==t); if(t==='szolgalat') loadShifts(); }
+document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+
+/* ---------- indulás ---------- */
+renderKinds(); renderDuty(); renderList();
+if(!cfg.url) showTab('beallitas');
+refreshCatalog(); refreshLive();
+setInterval(()=>{ if(document.visibilityState==='visible') refreshLive(); },20000);
+setInterval(()=>{ if(document.visibilityState==='visible') refreshCatalog(); },600000);
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') refreshLive(); });
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+})();
+</script>
+</body>
+</html>
