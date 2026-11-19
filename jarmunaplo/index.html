@@ -393,7 +393,7 @@ function renderList(){
   });
   $('more').hidden=rows.length<=limit;
   $('vempty').hidden=rows.length>0; box.hidden=rows.length===0;
-  $('vempty').textContent=!ready()?'Nyisd meg a személyes beállító linket, vagy add meg a BKK-kulcsot a Beállításokban.':(all.length?'Nincs találat.':'Még nincs jármű a listában. Az első lekérdezés után megjelennek a forgalomban lévők.');
+  $('vempty').textContent=!ready()?'Nyisd meg a személyes beállító linket, vagy add meg a BKK-kulcsot a Beállításokban.':(all.length?'Nincs találat.':(liveErr?('A járművek nem tölthetők be. Hiba: '+liveErr+' – küldj erről képernyőképet.'):'Járművek betöltése…'));
 }
 $('more').onclick=()=>{ limit+=200; renderList(); };
 $('q').addEventListener('input',()=>{ limit=150; renderList(); });
