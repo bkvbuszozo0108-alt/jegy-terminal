@@ -1,0 +1,39 @@
+name: Járműnapló APK
+
+on:
+  push:
+    branches: [main]
+    paths: ['jarmunaplo-app/**', '.github/workflows/jarmunaplo-app.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - name: Android SDK (előtelepített a runneren)
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses >/dev/null 2>&1 || true
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0" >/dev/null
+      - uses: gradle/actions/setup-gradle@v3
+        with: { gradle-version: '8.11.1' }
+      - name: Build APK
+        run: gradle -p jarmunaplo-app assembleRelease --no-daemon
+      - name: Közzététel (gh-pages/apk/jarmunaplo.apk)
+        run: |
+          ls jarmunaplo-app/app/build/outputs/apk/release/
+          git config user.name "github-actions"; git config user.email "actions@github.com"
+          for i in 1 2 3; do
+            git fetch origin gh-pages
+            rm -rf /tmp/pages; git worktree prune
+            git worktree add /tmp/pages origin/gh-pages
+            mkdir -p /tmp/pages/apk
+            cp jarmunaplo-app/app/build/outputs/apk/release/app-release.apk /tmp/pages/apk/jarmunaplo.apk
+            ( cd /tmp/pages && git add apk/jarmunaplo.apk && (git commit -m "Járműnapló APK frissítés" || true) && git push origin HEAD:gh-pages ) && break
+            sleep 5
+          done
