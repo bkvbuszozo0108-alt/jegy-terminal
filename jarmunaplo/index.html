@@ -188,8 +188,13 @@ pre.diag{font:12px/1.4 var(--mono);white-space:pre-wrap;overflow-wrap:anywhere;b
   <!-- BEÁLLÍTÁSOK -->
   <section id="t-beallitas" hidden>
     <div class="card form">
-      <label class="field">Szerver címe (Apps Script …/exec)<input id="sUrl" inputmode="url" autocomplete="off" placeholder="https://script.google.com/macros/s/…/exec"></label>
-      <label class="field">Kulcs<input id="sKey" autocomplete="off"></label>
+      <label class="field">BKK API-kulcs<input id="sBkk" autocomplete="off" spellcheck="false"></label>
+      <div class="msg">Ennyi elég: a járművek közvetlenül a BKK-tól jönnek, a jegyzetek és fotók ezen a készüléken maradnak.</div>
+      <details><summary class="msg" style="cursor:pointer">Közös szerver (nem kötelező)</summary>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
+          <label class="field">Szerver címe (Apps Script …/exec)<input id="sUrl" inputmode="url" autocomplete="off" placeholder="üresen hagyva: csak ez a készülék"></label>
+          <label class="field">Szerver kulcs<input id="sKey" autocomplete="off"></label>
+        </div></details>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button type="button" class="btn pri" id="sSave">Mentés</button>
         <button type="button" class="btn" id="sTest">Kapcsolat tesztelése</button>
@@ -259,16 +264,79 @@ const KINDS=[['jegyzet','Jegyzet'],['baleset','Baleset'],['serules','Sérülés'
 const KINDNAME=Object.fromEntries(KINDS);
 
 /* ---------- beállítások / szerver ---------- */
-const cfg=Object.assign({url:'',key:''},store.get('jn_cfg',{}));
-(function hashSetup(){ const h=location.hash.slice(1); if(!h) return; const p=new URLSearchParams(h); if(p.get('u')){ cfg.url=p.get('u'); cfg.key=p.get('k')||cfg.key; store.set('jn_cfg',cfg); history.replaceState(null,'',location.pathname); } })();
+const cfg=Object.assign({url:'',key:'',bkk:''},store.get('jn_cfg',{}));
+(function hashSetup(){ const h=location.hash.slice(1); if(!h) return; const p=new URLSearchParams(h);
+  if(p.get('u')){ cfg.url=p.get('u'); cfg.key=p.get('k')||cfg.key; }
+  if(p.get('b')){ cfg.bkk=p.get('b'); }
+  if(p.get('u')||p.get('b')){ store.set('jn_cfg',cfg); history.replaceState(null,'',location.pathname); } })();
+const ready=()=>!!(cfg.url||cfg.bkk);
+
+/* ---- helyi mód: közvetlen BKK lekérdezés + adatok a készüléken ---- */
+const BKK='https://futar.bkk.hu/api/query/v1/ws/otp/api/where/';
+const BBOX={lat:47.4925,lon:19.0513,latSpan:0.42,lonSpan:0.70};
+function catOf(t){ t=String(t||'').toUpperCase(); return t==='TRAM'?'villamos':t==='TROLLEYBUS'?'troli':t==='SUBWAY'?'metro':(t==='RAIL'||t==='SUBURBAN_RAILWAY')?'hev':t==='FERRY'?'hajo':(t==='BUS'||t==='COACH')?'busz':'egyeb'; }
+function normVeh(v,routes,trips){ const r=routes[v.routeId]||{}, t=trips[v.tripId]||{}, loc=v.location||{};
+  return {id:v.vehicleId||'',plate:v.licensePlate||'',label:v.label||'',model:v.model||'',type:catOf(v.vehicleRouteType||r.type),route:r.shortName||'',routeId:v.routeId||'',color:r.color||'',textColor:r.textColor||'',headsign:t.tripHeadsign||r.description||'',tripId:v.tripId||'',lat:loc.lat,lon:loc.lon,bearing:v.bearing,status:v.status||'',stopId:v.stopId||'',deviated:!!v.deviated,upd:v.lastUpdateTime||0}; }
+async function bkk(path,params){
+  if(!cfg.bkk) throw new Error('Nincs BKK-kulcs. Nyisd meg a személyes beállító linket.');
+  const q=new URLSearchParams(Object.assign({},params,{key:cfg.bkk,version:'3',appVersion:'jarmunaplo-1.0'}));
+  let r; try{ r=await fetch(BKK+path+'.json?'+q.toString()); }catch(e){ throw new Error('A BKK szervere nem érhető el ebből a böngészőből (hálózat vagy tiltás).'); }
+  let j; try{ j=await r.json(); }catch(e){ throw new Error('BKK válasz nem olvasható (HTTP '+r.status+')'); }
+  if(!r.ok||(j.status&&j.status!=='OK')) throw new Error('BKK: '+(j.text||j.status||('HTTP '+r.status)));
+  return j; }
+async function localLive(){
+  const j=await bkk('vehicles-for-location',{lat:BBOX.lat,lon:BBOX.lon,latSpan:BBOX.latSpan,lonSpan:BBOX.lonSpan,includeReferences:'true'});
+  const d=j.data||{}, refs=d.references||{}, list=(d.list||(d.entry&&d.entry.list)||[]).map(v=>normVeh(v,refs.routes||{},refs.trips||{}));
+  const now=Date.now(), cat=store.get('jn_catalog',[]), by={}; cat.forEach(c=>by[c.id]=c);
+  list.forEach(v=>{ if(!v.id) return; const c=by[v.id]; if(c){ Object.assign(c,{plate:v.plate||c.plate,label:v.label||c.label,model:v.model||c.model,type:v.type||c.type,lastSeen:now,lastRoute:v.route||c.lastRoute}); } else { const n={id:v.id,plate:v.plate,label:v.label,model:v.model,type:v.type,firstSeen:now,lastSeen:now,lastRoute:v.route}; cat.push(n); by[v.id]=n; } });
+  store.set('jn_catalog',cat);
+  return {ts:now,list,_raw:(d.list||[])[0]||null};
+}
+async function localTrip(tripId,vehicleId){
+  const p={tripId,includeReferences:'true'}; if(vehicleId) p.vehicleId=vehicleId;
+  const j=await bkk('trip-details',p); const d=j.data||{}, e=d.entry||{}, refs=d.references||{}, stops=refs.stops||{}, routes=refs.routes||{}, trips=refs.trips||{};
+  const tr=trips[e.tripId||tripId]||{}, r=routes[tr.routeId]||{};
+  return {tripId:e.tripId||tripId,route:r.shortName||'',color:r.color||'',textColor:r.textColor||'',headsign:tr.tripHeadsign||'',polyline:(e.polyline&&e.polyline.points)||'',
+    stops:(e.stopTimes||[]).map(s=>{ const st=stops[s.stopId]||{}; return {id:s.stopId,name:st.name||s.stopHeadsign||s.stopId,lat:st.lat,lon:st.lon,arr:s.arrivalTime||0,dep:s.departureTime||0,parr:s.predictedArrivalTime||0,pdep:s.predictedDepartureTime||0}; })};
+}
+/* fotók IndexedDB-ben */
+function idb(){ return new Promise((res,rej)=>{ const r=indexedDB.open('jarmunaplo',1); r.onupgradeneeded=()=>r.result.createObjectStore('photos'); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+async function idbPut(k,v){ const db=await idb(); return new Promise((res,rej)=>{ const t=db.transaction('photos','readwrite'); t.objectStore('photos').put(v,k); t.oncomplete=res; t.onerror=()=>rej(t.error); }); }
+async function idbGet(k){ const db=await idb(); return new Promise((res,rej)=>{ const q=db.transaction('photos').objectStore('photos').get(k); q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error); }); }
+async function idbDel(k){ const db=await idb(); return new Promise(res=>{ const t=db.transaction('photos','readwrite'); t.objectStore('photos').delete(k); t.oncomplete=res; t.onerror=res; }); }
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+async function localApi(op,p){
+  switch(op){
+    case 'ping': { const l=await localLive(); return {ok:true,bkk:'ok',vehicles:l.list.length,sample:l._raw}; }
+    case 'live': return localLive();
+    case 'catalog': return {ts:Date.now(),list:store.get('jn_catalog',[])};
+    case 'trip': return localTrip(p.tripId,p.vehicleId);
+    case 'notes': { const ns=store.get('jn_notes',[]).filter(n=>!p.veh||n.veh===p.veh).sort((a,b)=>b.ts-a.ts); return {list:ns.slice(0,+(p.limit||500))}; }
+    case 'shifts': return {list:store.get('jn_shifts',[]).sort((a,b)=>b.start-a.start)};
+    case 'photo': { const v=await idbGet(p.id); if(!v) throw new Error('nincs fotó'); return {mime:'image/jpeg',b64:v}; }
+  } throw new Error('ismeretlen művelet');
+}
+async function localPost(b){
+  const now=Date.now();
+  if(b.op==='shift_start'){ const id=uid(), sh=store.get('jn_shifts',[]); sh.push({id,start:now,end:0,by:b.by,byId:b.byId,note:b.note||''}); store.set('jn_shifts',sh); return {ok:true,id,start:now}; }
+  if(b.op==='shift_end'){ const sh=store.get('jn_shifts',[]); const s=sh.find(x=>x.id===b.id); if(s) s.end=now; store.set('jn_shifts',sh); return {ok:true,end:now}; }
+  if(b.op==='note'){ const id=uid(), ids=[]; for(const [i,ph] of (b.photos||[]).entries()){ const k=id+'_'+i; await idbPut(k,ph.b64); ids.push(k); }
+    const ns=store.get('jn_notes',[]); ns.push({id,ts:now,veh:b.veh,plate:b.plate,kind:b.kind,text:b.text,by:b.by,byId:b.byId,shift:b.shift,photos:ids});
+    try{ localStorage.setItem('jn_notes',JSON.stringify(ns)); }catch(e){ for(const k of ids) await idbDel(k); throw new Error('Megtelt a tárhely a készüléken'); }
+    return {ok:true,id,ts:now}; }
+  if(b.op==='note_del'){ const ns=store.get('jn_notes',[]); const n=ns.find(x=>x.id===b.id); if(n) for(const k of n.photos||[]) await idbDel(k); store.set('jn_notes',ns.filter(x=>x.id!==b.id)); return {ok:true}; }
+  if(b.op==='veh_set'){ const cat=store.get('jn_catalog',[]); let c=cat.find(x=>x.id===b.veh); if(!c){ c={id:b.veh,plate:b.plate,type:b.type}; cat.push(c); } if(b.palyaszam!==undefined) c.palyaszam=b.palyaszam; store.set('jn_catalog',cat); return {ok:true}; }
+  throw new Error('ismeretlen művelet');
+}
+
 async function api(op,params={}){
-  if(!cfg.url) throw new Error('Nincs beállítva a szerver címe (Beállítások).');
+  if(!cfg.url) return localApi(op,params);
   const q=new URLSearchParams(Object.assign({op,key:cfg.key},params));
   const r=await fetch(cfg.url+(cfg.url.includes('?')?'&':'?')+q.toString(),{redirect:'follow'});
   const j=await r.json(); if(j&&j.error) throw new Error(j.error); return j;
 }
 async function post(body){
-  if(!cfg.url) throw new Error('Nincs beállítva a szerver címe (Beállítások).');
+  if(!cfg.url) return localPost(body);
   const r=await fetch(cfg.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({key:cfg.key},body)),redirect:'follow'});
   const j=await r.json(); if(j&&j.error) throw new Error(j.error); return j;
 }
@@ -317,7 +385,7 @@ function renderList(){
   });
   $('more').hidden=rows.length<=limit;
   $('vempty').hidden=rows.length>0; box.hidden=rows.length===0;
-  $('vempty').textContent=!cfg.url?'Állítsd be a szervert a Beállítások fülön.':(all.length?'Nincs találat.':'Még nincs jármű a listában. Az első lekérdezés után megjelennek a forgalomban lévők.');
+  $('vempty').textContent=!ready()?'Nyisd meg a személyes beállító linket, vagy add meg a BKK-kulcsot a Beállításokban.':(all.length?'Nincs találat.':'Még nincs jármű a listában. Az első lekérdezés után megjelennek a forgalomban lévők.');
 }
 $('more').onclick=()=>{ limit+=200; renderList(); };
 $('q').addEventListener('input',()=>{ limit=150; renderList(); });
@@ -325,14 +393,14 @@ $('q').addEventListener('keydown',e=>{ if(e.key==='Enter'){ const first=$('vlist
 $('onlyLive').onchange=()=>{ limit=150; renderList(); };
 
 async function refreshLive(){
-  if(!cfg.url){ setLive('err','Nincs beállítva szerver'); renderList(); return; }
+  if(!ready()){ setLive('err','Nincs beállítva – nyisd meg a személyes beállító linket'); renderList(); return; }
   try{ live=await api('live'); liveById={}; (live.list||[]).forEach(v=>liveById[v.id]=v); liveErr='';
     setLive('live','Élő · '+live.list.length+' jármű forgalomban · '+hm(live.ts));
   }catch(e){ liveErr=e.message; setLive('err','Élő adat nem érhető el: '+e.message); }
   renderList(); if(curVeh) renderLive();
 }
 function setLive(s,t){ $('liveDot').className='dot'+(s==='live'?' live':s==='err'?' err':''); $('liveTxt').textContent=t; }
-async function refreshCatalog(){ if(!cfg.url) return; try{ const j=await api('catalog'); catalog=j.list||[]; store.set('jn_catalog',catalog); renderList(); }catch(e){} }
+async function refreshCatalog(){ if(!ready()) return; try{ const j=await api('catalog'); catalog=j.list||[]; store.set('jn_catalog',catalog); renderList(); }catch(e){} }
 
 /* ---------- szolgálat ---------- */
 let duty=store.get('jn_duty',null);   // {id,start,by,byId,note}
@@ -367,7 +435,7 @@ async function loadShifts(){
     if(!j.list.length){ box.append(el('div','empty','Még nincs szolgálat rögzítve.')); }
     j.list.slice(0,30).forEach(s=>{ const n=el('div','note'); const h=el('div','nh'); h.append(el('b','',s.by||'?'),el('span','',s.byId||''),el('span','',full(s.start)+' – '+(s.end?hm(s.end):'folyamatban')));
       n.append(h); if(s.note) n.append(el('div','tx',s.note)); box.appendChild(n); });
-  }catch(e){ box.innerHTML=''; box.append(el('div','empty',cfg.url?('Nem tölthető be: '+e.message):'Állítsd be a szervert a Beállítások fülön.')); }
+  }catch(e){ box.innerHTML=''; box.append(el('div','empty','Nem tölthető be: '+e.message)); }
   try{ const j=await api('notes',{limit:30}); const box2=$('recent'); box2.innerHTML='';
     if(!j.list.length) box2.append(el('div','empty','Még nincs bejegyzés.'));
     j.list.forEach(n=>box2.appendChild(noteEl(n,true)));
@@ -478,7 +546,7 @@ async function loadNotes(){
   try{ const j=await api('notes',{veh:curVeh}); box.innerHTML=''; $('vCount').textContent=j.list.length?j.list.length+' bejegyzés':'';
     if(!j.list.length) box.append(el('div','empty','Még nincs bejegyzés ehhez a járműhöz.'));
     j.list.forEach(n=>box.appendChild(noteEl(n,false)));
-  }catch(e){ box.innerHTML=''; box.append(el('div','empty',cfg.url?('Nem tölthető be: '+e.message):'Állítsd be a szervert a Beállítások fülön.')); }
+  }catch(e){ box.innerHTML=''; box.append(el('div','empty','Nem tölthető be: '+e.message)); }
 }
 const photoCache={};
 async function photoUrl(id){ if(photoCache[id]) return photoCache[id]; const j=await api('photo',{id}); const u='data:'+(j.mime||'image/jpeg')+';base64,'+j.b64; photoCache[id]=u; return u; }
@@ -496,15 +564,15 @@ function noteEl(n,withVeh){
 $('lb').onclick=()=>{ $('lb').hidden=true; $('lbImg').src=''; };
 
 /* ---------- beállítások ---------- */
-$('sUrl').value=cfg.url; $('sKey').value=cfg.key;
-$('sSave').onclick=()=>{ cfg.url=$('sUrl').value.trim(); cfg.key=$('sKey').value.trim(); store.set('jn_cfg',cfg); $('sMsg').className='msg'; $('sMsg').textContent='Mentve.'; refreshCatalog(); refreshLive(); loadShifts(); };
+$('sUrl').value=cfg.url; $('sKey').value=cfg.key; $('sBkk').value=cfg.bkk;
+$('sSave').onclick=()=>{ cfg.url=$('sUrl').value.trim(); cfg.key=$('sKey').value.trim(); cfg.bkk=$('sBkk').value.trim(); store.set('jn_cfg',cfg); $('sMsg').className='msg'; $('sMsg').textContent='Mentve.'; refreshCatalog(); refreshLive(); loadShifts(); };
 $('sTest').onclick=async()=>{
-  cfg.url=$('sUrl').value.trim(); cfg.key=$('sKey').value.trim(); store.set('jn_cfg',cfg);
+  cfg.url=$('sUrl').value.trim(); cfg.key=$('sKey').value.trim(); cfg.bkk=$('sBkk').value.trim(); store.set('jn_cfg',cfg);
   $('sMsg').className='msg'; $('sMsg').textContent='Tesztelés…'; $('sDiag').hidden=true;
   try{ const j=await api('ping');
     const okBkk=j.bkk==='ok';
     $('sMsg').className='msg'+(okBkk?'':' err');
-    $('sMsg').textContent='Szerver: rendben. BKK: '+(okBkk?('rendben, '+j.vehicles+' jármű forgalomban.'):j.bkk);
+    $('sMsg').textContent=(cfg.url?'Szerver: rendben. ':'')+'BKK: '+(okBkk?('rendben, '+j.vehicles+' jármű forgalomban.'):j.bkk);
     $('sDiag').textContent=JSON.stringify(j.sample||j,null,1); $('sDiag').hidden=false;
     if(okBkk){ refreshCatalog(); refreshLive(); loadShifts(); }
   }catch(e){ $('sMsg').className='msg err'; $('sMsg').textContent='Hiba: '+e.message; }
@@ -518,7 +586,7 @@ document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>showTab(b.
 
 /* ---------- indulás ---------- */
 renderKinds(); renderDuty(); renderList();
-if(!cfg.url) showTab('beallitas');
+if(!ready()) showTab('beallitas');
 refreshCatalog(); refreshLive();
 setInterval(()=>{ if(document.visibilityState==='visible') refreshLive(); },20000);
 setInterval(()=>{ if(document.visibilityState==='visible') refreshCatalog(); },600000);
