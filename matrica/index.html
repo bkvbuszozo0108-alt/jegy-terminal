@@ -44,7 +44,8 @@ td:last-child{font-family:ui-monospace,Consolas,monospace;word-break:break-all}
 input{flex:1;min-width:0;background:#0b2016;border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:11px 12px;font:inherit;text-transform:uppercase}
 input::placeholder{text-transform:none;color:#6f9a7d}
 button{border:1px solid var(--line);background:#163a25;color:var(--fg);border-radius:8px;padding:11px 14px;font:inherit;font-weight:700;font-size:13px;letter-spacing:.05em;text-transform:uppercase;cursor:pointer}
-button.pri{background:var(--acc);border-color:var(--acc);color:#0f2a1c}
+a.btn{display:block;text-align:center;text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:11px 14px;font-weight:700;font-size:13px;letter-spacing:.05em;text-transform:uppercase}
+button.pri,a.btn.pri{background:var(--acc);border-color:var(--acc);color:#0f2a1c}
 button:active{filter:brightness(1.25)}
 .cam{margin-top:12px;border-radius:12px;overflow:hidden;background:#000;position:relative;aspect-ratio:4/3}
 .cam video{width:100%;height:100%;object-fit:cover;display:block}
@@ -77,6 +78,8 @@ li.u .p{color:var(--warn);font-size:13px}
     <button id="sndBtn">Hang: be</button>
   </div>
   <div class="row"><button id="autoBtn" style="flex:1">Automatikus lekérdezés: be</button></div>
+  <div class="row" id="dl"><a class="btn pri" id="apk" href="../apk/vizor.apk" download style="flex:1">Letöltés – Android app (APK)</a></div>
+  <div class="row" id="pwaRow" hidden><button id="pwa" style="flex:1">Telepítés a kezdőképernyőre</button></div>
   <div class="msg" id="msg" hidden></div>
   <div class="cam" id="cam" hidden><video id="vid" playsinline muted></video></div>
 
@@ -228,6 +231,11 @@ function camOn(){
 $('camBtn').onclick=function(){ if($('cam').hidden) camOn(); else camOff(); };
 document.addEventListener('visibilitychange',function(){ if(document.hidden&&!$('cam').hidden) camOff(); });
 
+/* letöltés / telepítés: az appon belül nem kell */
+var inApp=/VizorApp/.test(navigator.userAgent), dp=null;
+if(inApp){ $('dl').hidden=true; $('camBtn').hidden=true; }
+window.addEventListener('beforeinstallprompt',function(e){ e.preventDefault(); dp=e; if(!inApp) $('pwaRow').hidden=false; });
+$('pwa').onclick=function(){ if(dp){ dp.prompt(); dp.userChoice.then(function(){ $('pwaRow').hidden=true; }); } };
 sndLabel(); render(); $('inp').focus();
 if('serviceWorker' in navigator) navigator.serviceWorker.register('../sw.js').catch(function(){});
 </script>
