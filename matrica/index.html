@@ -140,7 +140,7 @@ function show(r,t,times){
   tr(tb,'Beolvasva',ymd(t)+' '+hm(t)); tr(tb,'Eddig',times+'× olvastad be');
   box.appendChild(tb);
   if(r.plate){ var q=el('button','pri q','Járműadatok és fotók lekérdezése'); q.onclick=function(){ lookup(r.plate,true); }; box.appendChild(q);
-    box.appendChild(el('div','foot','A rendszám a vágólapra kerül – a JSZP-ben bejelentkezés után illeszd be.')); }
+    box.appendChild(el('div','foot','A rendszám a vágólapra kerül – bejelentkezés után illeszd be. Az appban a Vissza gombbal vagy új beolvasással jössz vissza.')); }
   void box.offsetWidth; box.classList.add('flash');
 }
 function render(){
@@ -159,6 +159,7 @@ function render(){
 /* ---- hivatalos lekérdezés: a JSZP-t nyitja meg, a rendszámot vágólapra teszi ---- */
 function lookup(plate,byTap){
   var p=plate.replace(/[^A-Z0-9]/g,'');
+  if(/VizorApp/.test(navigator.userAgent)){ try{ if(window.VizorNative) VizorNative.copy(p); }catch(e){} location.href=JSZP; return; } /* appban: ugyanott nyílik, Vissza gombbal jössz vissza */
   try{ if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(p).catch(function(){}); }catch(e){}
   var w=null; try{ w=window.open(JSZP,'vizor_jszp'); }catch(e){}
   if(!w){ if(byTap) location.href=JSZP; else msg('A lekérdezés nem nyílt meg magától – koppints a „Járműadatok és fotók lekérdezése” gombra.'); }
